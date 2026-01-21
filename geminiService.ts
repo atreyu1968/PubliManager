@@ -1,6 +1,11 @@
+
+// Fix: Import GoogleGenAI from the correct library and follow model selection guidelines
 import { GoogleGenAI } from "@google/genai";
 
-// Fix: Property 'env' does not exist on type 'ImportMeta'. Replacing with process.env.API_KEY and migrating to Gemini API.
+/**
+ * Generates editorial and marketing content using Gemini AI.
+ * Always initializes a new GoogleGenAI instance with process.env.API_KEY before usage.
+ */
 export const generateEditorialHelp = async (
   type: 'blurb' | 'ads' | 'aplus' | 'translate' | 'summary' | 'thanks', 
   title: string, 
@@ -8,7 +13,8 @@ export const generateEditorialHelp = async (
   extraContext?: string,
   isKU?: boolean
 ) => {
-  // Always use process.env.API_KEY as per guidelines for initializing the @google/genai client instance
+  // Fix: The API key must be obtained exclusively from process.env.API_KEY
+  // Fix: Initializing the client directly with process.env.API_KEY as per SDK requirements
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   let prompt = '';
@@ -29,20 +35,21 @@ export const generateEditorialHelp = async (
   }
 
   try {
-    // Basic Text Tasks: Use 'gemini-3-flash-preview' for summarization and marketing copy.
+    // Fix: Using gemini-3-pro-preview for high-quality complex reasoning tasks
+    // Fix: Accessing response content via .text property on the result
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "Eres un consultor experto en marketing editorial para Amazon KDP y Draft2Digital.",
+        systemInstruction: "Eres un consultor experto en marketing editorial para Amazon KDP y Draft2Digital. Eres conciso, persuasivo y experto en copywriting.",
+        temperature: 0.7,
       },
     });
 
-    // Directly access the .text property on the GenerateContentResponse object.
-    return response.text || "No se pudo generar una respuesta.";
+    return response.text || "No se recibió una respuesta válida.";
 
   } catch (error: any) {
     console.error("Gemini API Error:", error);
-    return `Error: ${error.message}.`;
+    return `Error: ${error.message || 'Error en la comunicación con Gemini AI'}.`;
   }
 };
