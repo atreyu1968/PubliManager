@@ -1,15 +1,15 @@
-
 import { GoogleGenAI } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 export const generateEditorialHelp = async (
   type: 'blurb' | 'ads' | 'aplus' | 'translate' | 'summary' | 'thanks', 
   title: string, 
   description: string,
   extraContext?: string,
-  isKU?: boolean // Nuevo parámetro
+  isKU?: boolean
 ) => {
+  // Inicializamos dentro de la función para evitar errores de carga inicial (blank screen)
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
   let prompt = '';
   const kuContext = isKU ? "Este libro es para Kindle Unlimited. Enfócate en ganchos rápidos, tropos claros del género y una promesa de gratificación inmediata para maximizar las páginas leídas." : "";
   
@@ -35,6 +35,6 @@ export const generateEditorialHelp = async (
     return response.text;
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Error al generar contenido.";
+    return "Error al generar contenido. Por favor, asegúrate de que la API Key sea válida y esté activa.";
   }
 };
