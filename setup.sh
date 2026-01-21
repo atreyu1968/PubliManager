@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -e
 
@@ -6,7 +7,6 @@ BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
 
-# Aumentar el límite de memoria para Node.js
 export NODE_OPTIONS="--max-old-space-size=2048"
 
 echo -e "${BLUE}====================================================${NC}"
@@ -14,7 +14,7 @@ echo -e "${BLUE}   Auto-Instalador PubliManager AI - DeepSeek Ed.  ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 if [ "$EUID" -ne 0 ]; then 
-  echo -e "${RED}Por favor, ejecuta el script con sudo: sudo ./setup.sh${NC}"
+  echo -e "${RED}Error: Ejecuta con sudo: sudo ./setup.sh${NC}"
   exit 1
 fi
 
@@ -27,10 +27,9 @@ if ! command -v node &> /dev/null; then
     apt install -y nodejs
 fi
 
-# Configuración de seguridad y API
 echo -e "${BLUE}----------------------------------------------------${NC}"
 if [ ! -f /etc/nginx/.htpasswd ]; then
-    read -p "Introduce la contraseña para el usuario 'admin' (Acceso Web): " APP_PASSWORD
+    read -p "Contraseña para usuario 'admin' (Acceso Web): " APP_PASSWORD
     htpasswd -bc /etc/nginx/.htpasswd admin "$APP_PASSWORD"
     chmod 644 /etc/nginx/.htpasswd
 fi
@@ -42,13 +41,12 @@ echo -e "${GREEN}API Key guardada en .env para la compilación.${NC}"
 echo -e "${BLUE}----------------------------------------------------${NC}"
 
 echo -e "${GREEN}[3/6] Instalando paquetes de NPM...${NC}"
-# Forzar instalación limpia para evitar conflictos de caché
 npm install
 
 echo -e "${GREEN}[4/6] Compilando aplicación con Vite...${NC}"
-# Limpiar dist previa
 rm -rf dist
-npm run build
+# Inyectamos la clave directamente en el comando de construcción
+VITE_DEEPSEEK_API_KEY=$DS_KEY npm run build
 
 echo -e "${GREEN}[5/6] Desplegando archivos en /var/www/publimanager...${NC}"
 DEPLOY_DIR="/var/www/publimanager"

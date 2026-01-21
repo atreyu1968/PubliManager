@@ -36,8 +36,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
       const output = await generateEditorialHelp(tool, book.title, contentToProcess, extra, book.kuStrategy);
       setResult(output || 'No se recibió respuesta de la IA.');
     } catch (err) {
-      // Handle API errors gracefully in the UI
-      setResult('Error crítico al procesar con Gemini. Revisa la consola para más detalles.');
+      setResult('Error crítico al procesar con DeepSeek. Revisa la consola para más detalles.');
     } finally {
       setLoading(false);
     }
@@ -47,14 +46,14 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-          <i className="fa-solid fa-brain text-indigo-500"></i> Laboratorio Gemini AI
+          <i className="fa-solid fa-brain text-indigo-500"></i> Laboratorio DeepSeek AI
         </h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-4 uppercase text-xs tracking-widest text-slate-400">Gemini Editorial Engine</h3>
+            <h3 className="font-black text-slate-800 mb-4 uppercase text-xs tracking-widest text-slate-400">DeepSeek Chat Engine (V3)</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Libro Fuente</label>
@@ -112,7 +111,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 disabled={loading || !selectedBookId}
                 className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition active:scale-95 disabled:bg-slate-200 mt-2 uppercase text-xs tracking-widest"
               >
-                {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : 'Procesar con Gemini'}
+                {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : 'Procesar con DeepSeek'}
               </button>
             </div>
           </div>
@@ -125,7 +124,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></span>
-                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">gemini_ai_session.out</span>
+                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">deepseek_ai_session.out</span>
               </div>
               {result && (
                 <button onClick={() => {navigator.clipboard.writeText(result); alert('Copiado');}} className="hover:text-white transition flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
@@ -139,7 +138,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
               ) : (
                 <div className="h-full flex flex-col items-center justify-center opacity-10 italic">
                   <i className="fa-solid fa-microchip text-7xl mb-6"></i>
-                  <p className="text-xl tracking-tighter text-center">Selecciona un libro y herramienta para comenzar el análisis con Gemini AI.</p>
+                  <p className="text-xl tracking-tighter text-center">Selecciona un libro y herramienta para comenzar el análisis inteligente con DeepSeek AI.</p>
                 </div>
               )}
             </div>
