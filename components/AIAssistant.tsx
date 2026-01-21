@@ -36,7 +36,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
       const output = await generateEditorialHelp(tool, book.title, contentToProcess, extra, book.kuStrategy);
       setResult(output || 'No se recibió respuesta de la IA.');
     } catch (err) {
-      setResult('Error crítico al procesar con IA. Verifica la conexión o la API KEY.');
+      setResult('Error crítico al procesar con IA. Verifica la conexión o la configuración del servidor.');
     } finally {
       setLoading(false);
     }

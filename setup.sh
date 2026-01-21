@@ -36,7 +36,7 @@ echo -e "${GREEN}[3/6] Instalando paquetes de NPM...${NC}"
 npm install --no-fund --no-audit
 
 echo -e "${GREEN}[4/6] Compilando aplicación con Vite...${NC}"
-# Forzamos la limpieza de la carpeta dist antes de compilar
+# Forzamos la limpieza absoluta antes de compilar
 rm -rf dist
 npm run build
 
@@ -63,7 +63,6 @@ server {
         try_files \$uri \$uri/ /index.html;
     }
 
-    # Caché para activos estáticos
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
         expires 30d;
         add_header Cache-Control "public, no-transform";
