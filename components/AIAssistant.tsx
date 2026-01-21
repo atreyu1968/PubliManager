@@ -24,20 +24,26 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
     const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
     setLoading(true);
     
-    let extra = undefined;
+    let extra: string = '';
     if (tool === 'translate') extra = targetLang;
     if (tool === 'thanks') extra = author?.name || 'Autor';
 
-    const contentToProcess = tool === 'thanks' ? (author?.bio || book.description) : book.description;
+    const contentToProcess = tool === 'thanks' 
+      ? (author?.bio || book.description || '') 
+      : (book.description || '');
 
-    // Pasamos el flag kuStrategy a la IA
-    const output = await generateEditorialHelp(tool, book.title, contentToProcess, extra, book.kuStrategy);
-    setResult(output);
-    setLoading(false);
+    try {
+      const output = await generateEditorialHelp(tool, book.title, contentToProcess, extra, book.kuStrategy);
+      setResult(output || 'No se recibió respuesta de la IA.');
+    } catch (err) {
+      setResult('Error crítico al procesar con IA. Verifica la conexión o la API KEY.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
           <i className="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Laboratorio de IA Editorial
@@ -118,7 +124,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></span>
-                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">{tool}_output.rtf</span>
+                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">ai_output.rtf</span>
               </div>
               {result && (
                 <button onClick={() => {navigator.clipboard.writeText(result); alert('Copiado');}} className="hover:text-white transition flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">

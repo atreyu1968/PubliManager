@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { AppData, SaleRecord } from '../types';
 import { db } from '../db';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
   data: AppData;
@@ -31,7 +31,7 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
 
   const getMonthName = (m: number) => {
     const dates = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-    return dates[m - 1];
+    return dates[m - 1] || 'N/A';
   };
 
   const chartData = data.sales.map(s => ({
@@ -42,13 +42,13 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
   }));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fadeIn">
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-black text-slate-800 tracking-tight">Registro Mensual</h1>
           <p className="text-sm text-slate-500 font-medium">Introduce los reportes de KDP y D2D cada mes.</p>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 flex items-center gap-2 transition-all">
+        <button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 flex items-center gap-2 transition-all active:scale-95">
           <i className="fa-solid fa-file-import"></i> Registrar Mes
         </button>
       </div>
@@ -56,27 +56,31 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm h-[400px]">
           <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Ingresos por Período</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="label" fontSize={10} fontBold />
-              <YAxis fontSize={10} />
-              <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-              <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} name="Euros (€)" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="h-full pb-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="label" fontSize={10} />
+                <YAxis fontSize={10} />
+                <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} name="Euros (€)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm h-[400px]">
-          <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Métricas KENP (Páginas Leídas)</h2>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-              <XAxis dataKey="label" fontSize={10} />
-              <YAxis fontSize={10} />
-              <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-              <Bar dataKey="kenpc" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Páginas" />
-            </BarChart>
-          </ResponsiveContainer>
+          <h2 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6">Métricas KENP</h2>
+          <div className="h-full pb-10">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis dataKey="label" fontSize={10} />
+                <YAxis fontSize={10} />
+                <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
+                <Bar dataKey="kenpc" fill="#3b82f6" radius={[6, 6, 0, 0]} name="Páginas" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       </div>
 
@@ -97,7 +101,7 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
               <tr key={record.id} className="hover:bg-slate-50 transition">
                 <td className="px-8 py-5 text-xs font-bold text-slate-600">{getMonthName(record.month)} {record.year}</td>
                 <td className="px-8 py-5 text-sm font-black text-slate-800">
-                  {data.books.find(b => b.id === record.bookId)?.title}
+                  {data.books.find(b => b.id === record.bookId)?.title || 'Libro eliminado'}
                 </td>
                 <td className="px-8 py-5">
                   <span className={`px-2 py-1 rounded-lg text-[10px] font-black ${record.platform === 'KDP' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
