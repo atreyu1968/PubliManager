@@ -35,13 +35,14 @@ if [ ! -f /etc/nginx/.htpasswd ]; then
     chmod 644 /etc/nginx/.htpasswd
 fi
 
-echo -e "${BLUE}Configuración de Inteligencia Artificial${NC}"
+echo -e "${BLUE}Configuración de Inteligencia Artificial (DeepSeek)${NC}"
 read -p "Introduce tu DeepSeek API Key: " DS_KEY
 echo "VITE_DEEPSEEK_API_KEY=$DS_KEY" > .env
 echo -e "${GREEN}API Key guardada en .env para la compilación.${NC}"
 echo -e "${BLUE}----------------------------------------------------${NC}"
 
 echo -e "${GREEN}[3/6] Instalando paquetes de NPM...${NC}"
+# Forzar instalación limpia para evitar conflictos de caché
 npm install
 
 echo -e "${GREEN}[4/6] Compilando aplicación con Vite...${NC}"
