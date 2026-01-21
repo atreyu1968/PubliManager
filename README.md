@@ -12,20 +12,27 @@ La aplicación está preparada para ser desplegada en un servidor Ubuntu bajo el
 *   Permisos de superusuario (sudo).
 
 ### Proceso de Autoinstalación
-1. Conéctate a tu servidor por SSH.
-2. Clona el repositorio oficial:
-   ```bash
-   git clone https://github.com/atreyu1968/PubliManager.git asd-manager
-   cd asd-manager
-   ```
-3. Ejecuta el script de instalación automática:
-   ```bash
-   chmod +x setup.sh
-   sudo ./setup.sh
-   ```
+
+Para poder descargar el código en un servidor recién instalado, **primero debes instalar Git**. Sigue estos pasos exactos:
+
+1.  **Conéctate a tu servidor** por SSH.
+2.  **Instala Git** (paso obligatorio antes de clonar):
+    ```bash
+    sudo apt update && sudo apt install -y git
+    ```
+3.  **Clona el repositorio oficial**:
+    ```bash
+    git clone https://github.com/atreyu1968/PubliManager.git asd-manager
+    cd asd-manager
+    ```
+4.  **Ejecuta el script de instalación automática**:
+    ```bash
+    chmod +x setup.sh
+    sudo ./setup.sh
+    ```
 
 **¿Qué hace el script?**
-*   **Actualización**: Actualiza Ubuntu e instala `curl`, `git`, `nginx` y `Node.js v20`.
+*   **Actualización**: Actualiza Ubuntu e instala `curl`, `nginx` y `Node.js v20`.
 *   **Construcción**: Instala las dependencias y compila el proyecto para producción (`npm run build`).
 *   **Seguridad**: Configura un acceso protegido mediante **Basic Auth** (te pedirá la contraseña durante el proceso).
 *   **Servidor Web**: Configura Nginx para servir la aplicación de forma óptima en `http://asd.atreyu.net`.
