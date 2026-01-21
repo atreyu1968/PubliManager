@@ -1,9 +1,8 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 /**
- * Servicio de IA - Integración con Google Gemini API
- * Procesa peticiones editoriales utilizando el modelo gemini-3-pro-preview.
+ * Servicio de Inteligencia Editorial - Motor de Razonamiento Profundo
+ * Utiliza exclusivamente el entorno pre-configurado para acceso seguro.
  */
 export const generateEditorialHelp = async (
   type: 'blurb' | 'ads' | 'aplus' | 'translate' | 'summary' | 'thanks', 
@@ -12,47 +11,55 @@ export const generateEditorialHelp = async (
   extraContext?: string,
   isKU?: boolean
 ) => {
-  // Always use process.env.API_KEY as per the @google/genai coding guidelines
+  // Inicialización directa según directrices (apiKey desde process.env.API_KEY)
   const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
   let prompt = '';
-  const kuContext = isKU ? "Este libro es para Kindle Unlimited. Enfócate en ganchos rápidos, tropos claros del género y una promesa de gratificación inmediata." : "";
+  const kuContext = isKU ? "ESTRATEGIA KINDLE UNLIMITED: Maximiza el hook inicial y el 'read-through'." : "";
   
-  if (type === 'blurb') {
-    prompt = `Como experto SEO en KDP, mejora este blurb para el libro "${title}": "${description}". ${kuContext} Hazlo persuasivo y usa copywriting de alto impacto.`;
-  } else if (type === 'ads') {
-    prompt = `Genera 5 variantes de titulares cortos para Amazon Ads del libro "${title}" basándote en: "${description}". ${isKU ? "Usa frases que funcionen bien en KU." : ""}`;
-  } else if (type === 'aplus') {
-    prompt = `Sugiere 3 módulos de "A+ Content" para el libro "${title}" basándote en: "${description}". ${isKU ? "Destaca que está disponible en Kindle Unlimited." : ""}`;
-  } else if (type === 'translate') {
-    prompt = `Localiza y adapta el título "${title}" y blurb "${description}" al idioma ${extraContext}. Transcreación para ventas. ${isKU ? "Mantén los tropos del género para KU." : ""}`;
-  } else if (type === 'summary') {
-    prompt = `Destila esta sinopsis en un resumen impactante de máximo 2 frases (Pitch) para el libro "${title}": "${description}". ${kuContext}`;
-  } else if (type === 'thanks') {
-    prompt = `Escribe un texto de agradecimientos profesional y cálido para el autor "${extraContext}" (Bio: ${description}). Libro: "${title}".`;
+  const systemInstruction = `Eres un Senior Editorial Strategist de Atreyu Servicios Digitales. 
+    Tu objetivo es realizar un análisis profundo (Deep Analysis) y producir textos de altísimo impacto comercial para Amazon KDP. 
+    Eres analítico, directo y usas técnicas de copywriting de élite.`;
+
+  switch(type) {
+    case 'blurb':
+      prompt = `ANÁLISIS DE BLURB: Mejora la conversión del libro "${title}". Original: "${description}". ${kuContext} Reestructura para SEO y engagement emocional.`;
+      break;
+    case 'ads':
+      prompt = `CAMPAÑA ADS: Genera 5 copys de alto CTR para Amazon Ads del libro "${title}". Basado en: "${description}".`;
+      break;
+    case 'translate':
+      prompt = `TRANSCREACIÓN PROFUNDA: Adapta "${title}" y su sinopsis "${description}" al ${extraContext}. No traduzcas literalmente, adapta los tropos culturales.`;
+      break;
+    case 'summary':
+      prompt = `SALES PITCH: Destila "${title}" en un "Elevator Pitch" de 2 frases basado en: "${description}".`;
+      break;
+    case 'thanks':
+      prompt = `CREDITS & THANKS: Redacta agradecimientos para el autor "${extraContext}" (Bio: ${description}) del libro "${title}".`;
+      break;
+    default:
+      prompt = `Analiza este proyecto editorial: "${title}" - "${description}"`;
   }
 
   try {
-    // Using gemini-3-pro-preview for complex reasoning and copywriting tasks
+    // Usamos gemini-3-pro-preview para máxima capacidad de razonamiento editorial
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',
       contents: prompt,
       config: {
-        systemInstruction: "Eres un consultor experto en marketing editorial para Amazon KDP y Draft2Digital. Eres conciso, persuasivo y experto en copywriting.",
-        temperature: 0.7,
+        systemInstruction,
+        temperature: 0.8,
+        thinkingConfig: { thinkingBudget: 4000 } // Activamos el presupuesto de pensamiento para análisis profundo
       }
     });
 
-    // Access the .text property directly as per the correct method defined in guidelines
-    const text = response.text;
-    if (!text) {
-      throw new Error("No se recibió una respuesta válida de Gemini.");
-    }
-
-    return text;
+    return response.text || "Análisis completado sin respuesta textual.";
 
   } catch (error: any) {
-    console.error("Gemini API Error:", error);
-    return `Error al conectar con Gemini: ${error.message}`;
+    console.error("Editorial AI Error:", error);
+    if (error.message?.includes("entity was not found")) {
+      return "Error: Acceso al modelo restringido. Contacte con soporte técnico.";
+    }
+    return `Error en el análisis profundo: ${error.message}`;
   }
 };
