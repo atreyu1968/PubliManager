@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -e
 
@@ -6,6 +5,10 @@ GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 RED='\033[0;31m'
 NC='\033[0m'
+
+# Aumentar el límite de memoria para Node.js (2048 = 2GB)
+# Esto evita el error FatalProcessOutOfMemory durante la compilación de Tailwind
+export NODE_OPTIONS="--max-old-space-size=2048"
 
 echo -e "${BLUE}====================================================${NC}"
 echo -e "${BLUE}   Auto-Instalador PubliManager AI - ASD Atreyu    ${NC}"
@@ -32,8 +35,10 @@ if [ ! -f /etc/nginx/.htpasswd ]; then
     chmod 644 /etc/nginx/.htpasswd
 fi
 
-echo -e "${GREEN}[3/6] Instalando paquetes de NPM...${NC}"
-npm install --no-fund --no-audit
+echo -e "${GREEN}[3/6] Instalando paquetes de NPM (Modo Optimizado)...${NC}"
+# Limpiar caché y realizar instalación optimizada para bajos recursos
+npm cache clean --force || true
+npm install --no-fund --no-audit --prefer-offline
 
 echo -e "${GREEN}[4/6] Compilando aplicación con Vite...${NC}"
 # Forzamos la limpieza absoluta antes de compilar
