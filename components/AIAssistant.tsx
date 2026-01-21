@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { AppData } from '../types';
 import { generateEditorialHelp } from '../geminiService';
@@ -36,7 +35,8 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
       const output = await generateEditorialHelp(tool, book.title, contentToProcess, extra, book.kuStrategy);
       setResult(output || 'No se recibió respuesta de la IA.');
     } catch (err) {
-      setResult('Error crítico al procesar con IA. Verifica la conexión o la configuración del servidor.');
+      // Fix: Error message updated to reflect Gemini switch
+      setResult('Error crítico al procesar con Gemini. Verifica la configuración de la API Key.');
     } finally {
       setLoading(false);
     }
@@ -46,14 +46,16 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
     <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
-          <i className="fa-solid fa-wand-magic-sparkles text-indigo-500"></i> Laboratorio de IA Editorial
+          {/* Fix: Logo label update */}
+          <i className="fa-solid fa-brain text-indigo-500"></i> Laboratorio Gemini AI
         </h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100">
-            <h3 className="font-black text-slate-800 mb-4 uppercase text-xs tracking-widest text-slate-400">Panel de Control</h3>
+            {/* Fix: Engine model label updated */}
+            <h3 className="font-black text-slate-800 mb-4 uppercase text-xs tracking-widest text-slate-400">Gemini 3 Flash Engine</h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Libro Fuente</label>
@@ -70,22 +72,23 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
               </div>
 
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Herramienta Especializada</label>
+                {/* Fix: Algorithm label updated */}
+                <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">Algoritmo Gemini</label>
                 <div className="grid grid-cols-1 gap-2">
                   <button onClick={() => setTool('summary')} className={`text-left px-4 py-3 rounded-xl border transition ${tool === 'summary' ? 'bg-indigo-600 border-indigo-600 text-white font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-                    <i className="fa-solid fa-bolt mr-2"></i> Pitch / Resumen Corto
+                    <i className="fa-solid fa-bolt mr-2"></i> Pitch de Ventas
                   </button>
                   <button onClick={() => setTool('thanks')} className={`text-left px-4 py-3 rounded-xl border transition ${tool === 'thanks' ? 'bg-indigo-600 border-indigo-600 text-white font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-                    <i className="fa-solid fa-heart mr-2"></i> Generar Agradecimientos
+                    <i className="fa-solid fa-heart mr-2"></i> Agradecimientos
                   </button>
                   <button onClick={() => setTool('blurb')} className={`text-left px-4 py-3 rounded-xl border transition ${tool === 'blurb' ? 'bg-indigo-600 border-indigo-600 text-white font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-                    <i className="fa-solid fa-feather mr-2"></i> Optimizar Blurb Largo
+                    <i className="fa-solid fa-feather mr-2"></i> Optimizar Blurb
                   </button>
                   <button onClick={() => setTool('translate')} className={`text-left px-4 py-3 rounded-xl border transition ${tool === 'translate' ? 'bg-indigo-600 border-indigo-600 text-white font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-                    <i className="fa-solid fa-globe mr-2"></i> Localización / Traducción
+                    <i className="fa-solid fa-globe mr-2"></i> Transcreación
                   </button>
                   <button onClick={() => setTool('ads')} className={`text-left px-4 py-3 rounded-xl border transition ${tool === 'ads' ? 'bg-indigo-600 border-indigo-600 text-white font-bold' : 'bg-white border-slate-100 text-slate-500 hover:bg-slate-50'}`}>
-                    <i className="fa-solid fa-bullhorn mr-2"></i> Copys para Amazon Ads
+                    <i className="fa-solid fa-bullhorn mr-2"></i> Amazon Ads Copy
                   </button>
                 </div>
               </div>
@@ -111,7 +114,8 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 disabled={loading || !selectedBookId}
                 className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition active:scale-95 disabled:bg-slate-200 mt-2 uppercase text-xs tracking-widest"
               >
-                {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : 'Ejecutar Algoritmo'}
+                {/* Fix: Process button label updated */}
+                {loading ? <i className="fa-solid fa-circle-notch animate-spin"></i> : 'Procesar con Gemini'}
               </button>
             </div>
           </div>
@@ -124,7 +128,8 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/50"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></span>
-                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">ai_output.rtf</span>
+                {/* Fix: Filename in terminal updated */}
+                <span className="ml-3 text-[10px] font-mono uppercase tracking-[0.2em]">gemini_3_flash_model.out</span>
               </div>
               {result && (
                 <button onClick={() => {navigator.clipboard.writeText(result); alert('Copiado');}} className="hover:text-white transition flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
@@ -134,11 +139,11 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
             </div>
             <div className="p-10 text-slate-300 font-mono text-sm overflow-y-auto flex-1 leading-relaxed bg-[url('https://www.transparenttextures.com/patterns/dark-matter.png')]">
               {result ? (
-                <div className="whitespace-pre-wrap animate-fadeIn text-indigo-100">{result}</div>
+                <div className="whitespace-pre-wrap animate-fadeIn text-emerald-100">{result}</div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center opacity-10 italic">
-                  <i className="fa-solid fa-terminal text-7xl mb-6"></i>
-                  <p className="text-xl tracking-tighter">Procesador editorial listo...</p>
+                  <i className="fa-solid fa-microchip text-7xl mb-6"></i>
+                  <p className="text-xl tracking-tighter">Esperando entrada de datos...</p>
                 </div>
               )}
             </div>
