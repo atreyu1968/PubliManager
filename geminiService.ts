@@ -1,7 +1,9 @@
 
+import { GoogleGenAI } from "@google/genai";
+
 /**
- * Servicio de IA - Integración con DeepSeek (OpenAI Compatible)
- * Procesa peticiones editoriales utilizando el modelo deepseek-chat.
+ * Servicio de IA - Integración con Google Gemini API
+ * Procesa peticiones editoriales utilizando el modelo gemini-3-pro-preview.
  */
 export const generateEditorialHelp = async (
   type: 'blurb' | 'ads' | 'aplus' | 'translate' | 'summary' | 'thanks', 
@@ -10,12 +12,8 @@ export const generateEditorialHelp = async (
   extraContext?: string,
   isKU?: boolean
 ) => {
-  // La clave se obtiene de las variables de entorno inyectadas por Vite
-  const apiKey = (import.meta as any).env.VITE_DEEPSEEK_API_KEY;
-
-  if (!apiKey) {
-    return "Error: No se ha configurado la API Key de DeepSeek. Por favor, ejecuta el setup.sh nuevamente.";
-  }
+  // Always use process.env.API_KEY as per the @google/genai coding guidelines
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
   let prompt = '';
   const kuContext = isKU ? "Este libro es para Kindle Unlimited. Enfócate en ganchos rápidos, tropos claros del género y una promesa de gratificación inmediata." : "";
@@ -35,39 +33,26 @@ export const generateEditorialHelp = async (
   }
 
   try {
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: "deepseek-chat",
-        messages: [
-          { 
-            role: "system", 
-            content: "Eres un consultor experto en marketing editorial para Amazon KDP y Draft2Digital. Eres conciso, persuasivo y experto en copywriting." 
-          },
-          { 
-            role: "user", 
-            content: prompt 
-          }
-        ],
+    // Using gemini-3-pro-preview for complex reasoning and copywriting tasks
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-pro-preview',
+      contents: prompt,
+      config: {
+        systemInstruction: "Eres un consultor experto en marketing editorial para Amazon KDP y Draft2Digital. Eres conciso, persuasivo y experto en copywriting.",
         temperature: 0.7,
-        max_tokens: 2000
-      })
+      }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || `Error ${response.status}`);
+    // Access the .text property directly as per the correct method defined in guidelines
+    const text = response.text;
+    if (!text) {
+      throw new Error("No se recibió una respuesta válida de Gemini.");
     }
 
-    const data = await response.json();
-    return data.choices[0].message.content || "No se recibió una respuesta válida de DeepSeek.";
+    return text;
 
   } catch (error: any) {
-    console.error("DeepSeek API Error:", error);
-    return `Error al conectar con DeepSeek: ${error.message}`;
+    console.error("Gemini API Error:", error);
+    return `Error al conectar con Gemini: ${error.message}`;
   }
 };

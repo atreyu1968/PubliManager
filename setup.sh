@@ -1,4 +1,3 @@
-
 #!/bin/bash
 set -e
 
@@ -10,7 +9,7 @@ NC='\033[0m'
 export NODE_OPTIONS="--max-old-space-size=2048"
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}   Auto-Instalador PubliManager AI - DeepSeek Ed.  ${NC}"
+echo -e "${BLUE}   Auto-Instalador PubliManager AI - Gemini Edition ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 if [ "$EUID" -ne 0 ]; then 
@@ -34,9 +33,9 @@ if [ ! -f /etc/nginx/.htpasswd ]; then
     chmod 644 /etc/nginx/.htpasswd
 fi
 
-echo -e "${BLUE}Configuración de Inteligencia Artificial (DeepSeek)${NC}"
-read -p "Introduce tu DeepSeek API Key: " DS_KEY
-echo "VITE_DEEPSEEK_API_KEY=$DS_KEY" > .env
+echo -e "${BLUE}Configuración de Inteligencia Artificial (Google Gemini)${NC}"
+read -p "Introduce tu Gemini API Key: " G_KEY
+echo "API_KEY=$G_KEY" > .env
 echo -e "${GREEN}API Key guardada en .env para la compilación.${NC}"
 echo -e "${BLUE}----------------------------------------------------${NC}"
 
@@ -45,8 +44,8 @@ npm install
 
 echo -e "${GREEN}[4/6] Compilando aplicación con Vite...${NC}"
 rm -rf dist
-# Inyectamos la clave directamente en el comando de construcción
-VITE_DEEPSEEK_API_KEY=$DS_KEY npm run build
+# La API_KEY se inyecta durante el build
+API_KEY=$G_KEY npm run build
 
 echo -e "${GREEN}[5/6] Desplegando archivos en /var/www/publimanager...${NC}"
 DEPLOY_DIR="/var/www/publimanager"
@@ -79,7 +78,11 @@ rm -f /etc/nginx/sites-enabled/default || true
 nginx -t
 systemctl restart nginx
 
+# Asegurar que el script de actualización sea ejecutable
+chmod +x update.sh
+
 echo -e "${BLUE}====================================================${NC}"
 echo -e "${GREEN}¡INSTALACIÓN COMPLETADA EXITOSAMENTE!${NC}"
 echo -e "Accede en: ${BLUE}http://asd.atreyu.net${NC}"
+echo -e "Para futuras actualizaciones ejecuta: ${BLUE}sudo ./update.sh${NC}"
 echo -e "${BLUE}====================================================${NC}"
