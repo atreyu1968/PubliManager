@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { db } from './db';
@@ -101,9 +102,9 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50 text-slate-900">
         <Sidebar onLogout={handleLogout} />
-        <main className="flex-1 ml-64 p-8 flex flex-col">
+        <main className="flex-1 ml-64 p-8 flex flex-col overflow-x-hidden">
           <div className="flex-1">
             <Routes>
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
@@ -117,11 +118,11 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
-          <footer className="mt-auto py-4 border-t border-slate-100 flex items-center justify-center gap-4 opacity-60 hover:opacity-100 transition-opacity">
+          <footer className="mt-auto py-8 border-t border-slate-200 flex items-center justify-center gap-4 opacity-60">
             <div className="flex items-center gap-2">
               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atreyu servicios digitales</span>
             </div>
-            <span className="text-slate-200">|</span>
+            <span className="text-slate-300">|</span>
             <p className="text-[9px] text-slate-400 font-medium tracking-tight">© {new Date().getFullYear()} Indie PubliManager</p>
           </footer>
         </main>

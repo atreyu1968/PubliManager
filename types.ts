@@ -1,12 +1,13 @@
 
 export type Platform = 'KDP' | 'D2D' | 'Ambos';
 export type BookFormat = 'Ebook' | 'Papel' | 'Dura' | 'Audio';
+export type BookStatus = 'Sin escribir' | 'Sin editar' | 'Preparado' | 'Publicado';
 
 export interface Imprint {
   id: string;
   name: string;
   language: string;
-  logoUrl?: string; // Nuevo
+  logoUrl?: string; 
 }
 
 export interface Pseudonym {
@@ -21,11 +22,13 @@ export interface Series {
   id: string;
   name: string;
   description: string;
+  language?: string; // Campo añadido para soporte multi-idioma
 }
 
 export interface Book {
   id: string;
   title: string;
+  language?: string;
   seriesId?: string;
   seriesOrder?: number;
   pseudonymId: string;
@@ -37,7 +40,8 @@ export interface Book {
   formats: BookFormat[];
   price: number;
   releaseDate: string;
-  status: 'Draft' | 'Published' | 'Archived';
+  scheduledDate?: string; 
+  status: BookStatus;
   coverUrl?: string;
   amazonLink?: string;
   d2dLink?: string;

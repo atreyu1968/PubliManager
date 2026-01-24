@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es" style="background-color: #000000;">
 <head>
@@ -20,17 +21,25 @@
       }
     </script>
     <style>
-      body { background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
+      body { background-color: #000000; margin: 0; padding: 0; }
       #root { min-height: 100vh; }
       .fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
       @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      
+      /* Reset de autofill para mantener estética */
       input:-webkit-autofill,
       input:-webkit-autofill:hover, 
       input:-webkit-autofill:focus, 
-      input:-webkit-autofill:active{
-          -webkit-box-shadow: 0 0 0 30px black inset !important;
-          -webkit-text-fill-color: white !important;
+      input:-webkit-autofill:active {
+          -webkit-box-shadow: 0 0 0 30px white inset !important;
+          -webkit-text-fill-color: #0f172a !important; /* slate-900 */
       }
+
+      /* Estilos específicos para scrollbars */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 <script type="importmap">
 {

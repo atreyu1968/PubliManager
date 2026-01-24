@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppData, Imprint } from '../types';
 import { db } from '../db';
@@ -52,9 +53,9 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 text-slate-900">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-black text-slate-800 tracking-tight">Sellos Editoriales</h1>
+        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Sellos Editoriales</h1>
       </div>
 
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6">
@@ -68,12 +69,12 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
         
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-50 border-none rounded-xl px-4 py-3 font-bold text-slate-800" />
-          <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border-none rounded-xl px-4 py-3 text-slate-600" />
+          <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
+          <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-600 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
         <div className="flex gap-2">
-            <button onClick={handleSave} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-black shadow-lg transition-transform active:scale-95">
+            <button onClick={handleSave} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black shadow-lg transition-transform active:scale-95 text-xs uppercase tracking-widest">
                 {editingId ? 'Actualizar' : 'Añadir'}
             </button>
             {editingId && <button onClick={resetForm} className="bg-slate-100 text-slate-400 p-3 rounded-xl hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>}
@@ -88,8 +89,8 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
                 {imprint.logoUrl ? <img src={imprint.logoUrl} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
               </div>
               <div>
-                <h3 className="font-black text-slate-800 tracking-tight">{imprint.name}</h3>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{imprint.language}</p>
+                <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
+                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
