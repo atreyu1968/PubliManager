@@ -42,7 +42,8 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     kindleUnlimited: false,
     kuStrategy: false,
     amazonLink: '',
-    d2dLink: ''
+    d2dLink: '',
+    asin: ''
   });
 
   useEffect(() => {
@@ -181,7 +182,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     setNewAuthorName('');
     setNewBook({ 
       title: '', pseudonymId: '', seriesId: '', seriesOrder: 1, description: '', platforms: ['KDP'], 
-      status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: ''
+      status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', asin: ''
     });
   };
 
@@ -192,7 +193,8 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     
     const matchesSearch = book.title.toLowerCase().includes(searchLow) || 
                           (author?.name.toLowerCase().includes(searchLow)) ||
-                          (series?.name.toLowerCase().includes(searchLow));
+                          (series?.name.toLowerCase().includes(searchLow)) ||
+                          (book.asin?.toLowerCase().includes(searchLow));
     
     const matchesStatus = statusFilter === 'Todos' || book.status === statusFilter;
     const matchesAuthor = authorFilter === 'Todos' || book.pseudonymId === authorFilter;
@@ -235,7 +237,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
           <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
           <input 
             type="text" 
-            placeholder="Buscar por título, autor o saga..." 
+            placeholder="Buscar por título, autor, saga o ASIN..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-16 pr-6 text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
@@ -310,7 +312,14 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                   </span>
                 </div>
                 <h3 className="text-sm font-black text-slate-900 truncate pr-4 leading-tight">{book.title}</h3>
-                <p className="text-[9px] font-bold text-slate-400 uppercase mt-1">Autor: {author?.name || 'Desconocido'}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">Autor: {author?.name || 'Desconocido'}</p>
+                  {book.asin && (
+                    <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-mono font-bold text-slate-600 uppercase">
+                      ASIN: {book.asin}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[8px] font-bold text-slate-300 uppercase mt-0.5">{book.language}</p>
               </div>
               
@@ -442,14 +451,18 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
 
                   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Distribución y Enlaces</label>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="relative">
                         <i className="fa-brands fa-amazon absolute left-4 top-1/2 -translate-y-1/2 text-orange-400"></i>
-                        <input type="text" placeholder="Enlace Amazon KDP" value={newBook.amazonLink} onChange={e => setNewBook({...newBook, amazonLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20" />
+                        <input type="text" placeholder="Enlace KDP" value={newBook.amazonLink} onChange={e => setNewBook({...newBook, amazonLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20" />
+                      </div>
+                      <div className="relative">
+                        <i className="fa-solid fa-barcode absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400"></i>
+                        <input type="text" placeholder="ASIN Amazon" value={newBook.asin} onChange={e => setNewBook({...newBook, asin: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" />
                       </div>
                       <div className="relative">
                         <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"></i>
-                        <input type="text" placeholder="Enlace Draft2Digital" value={newBook.d2dLink} onChange={e => setNewBook({...newBook, d2dLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20" />
+                        <input type="text" placeholder="Enlace D2D" value={newBook.d2dLink} onChange={e => setNewBook({...newBook, d2dLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20" />
                       </div>
                     </div>
                   </div>

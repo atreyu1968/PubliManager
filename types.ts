@@ -36,6 +36,7 @@ export interface Book {
   description: string;
   shortSummary?: string;
   isbn?: string;
+  asin?: string; // Identificador único de Amazon para importación de ventas
   platforms: Platform[];
   formats: BookFormat[];
   price: number;
