@@ -163,7 +163,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
 
   const openEdit = async (book: Book) => {
     const fullCover = await imageStore.get(book.id);
-    setNewBook({ ...book, coverUrl: fullCover || '' });
+    setNewBook({ ...book, coverUrl: fullCover || book.coverUrl || '' });
     setEditingId(book.id);
     setIsCreatingNewSeries(false);
     setIsCreatingNewAuthor(false);
@@ -252,13 +252,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
         {filteredBooks.map(book => {
           const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
-          const currentCover = covers[book.id];
+          const displayCover = covers[book.id] || book.coverUrl;
           
           return (
             <div key={book.id} className="bg-white rounded-[1.5rem] p-3 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
               <div className="w-12 h-16 bg-slate-50 rounded-lg overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100">
-                {currentCover ? (
-                  <img src={currentCover} className="w-full h-full object-cover" alt={book.title} />
+                {displayCover ? (
+                  <img src={displayCover} className="w-full h-full object-cover" alt={book.title} />
                 ) : (
                   <i className="fa-solid fa-book-bookmark text-slate-200"></i>
                 )}

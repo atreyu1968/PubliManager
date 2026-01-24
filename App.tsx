@@ -4,6 +4,7 @@ import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-ro
 import { db } from './db';
 import { AppData } from './types';
 import { ASD_LOGO_IMAGE } from './assets';
+import { imageStore } from './imageStore';
 import Dashboard from './components/Dashboard';
 import BooksManager from './components/BooksManager';
 import SeriesManager from './components/SeriesManager';
@@ -14,9 +15,29 @@ import SalesTracker from './components/SalesTracker';
 import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
 
-const ASDLogo = ({ className = "w-16" }: { className?: string }) => (
-  <img src={ASD_LOGO_IMAGE} alt="ASD Logo" className={className} />
-);
+// Componente de logo reactivo al sistema de marca
+export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
+  const [customLogo, setCustomLogo] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadBrand = async () => {
+      const logo = await imageStore.get('SYSTEM_BRAND_LOGO');
+      setCustomLogo(logo);
+    };
+    loadBrand();
+    // Escuchar cambios de marca
+    window.addEventListener('brand_updated', loadBrand);
+    return () => window.removeEventListener('brand_updated', loadBrand);
+  }, []);
+
+  return (
+    <img 
+      src={(!forceDefault && customLogo) ? customLogo : ASD_LOGO_IMAGE} 
+      alt="ASD Logo" 
+      className={`${className} transition-opacity duration-500`} 
+    />
+  );
+};
 
 const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
   const location = useLocation();
@@ -35,10 +56,12 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     <div className="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-xl z-50">
       <div className="p-6 border-b border-slate-800 flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <ASDLogo className="w-14" />
-          <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Atreyu ASD</span>
+          <ASDLogo className="w-12 h-12 object-contain" />
+          <div className="flex flex-col">
+            <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase leading-none">Atreyu ASD</span>
+            <span className="text-[8px] font-bold text-[#1CB5B1] uppercase mt-1">Publisher v2.5</span>
+          </div>
         </div>
-        <div className="mt-2 text-[10px] font-bold text-slate-400 bg-slate-800/50 px-2 py-1 rounded inline-block w-fit">PUBLIMANAGER AI</div>
       </div>
       <nav className="flex-1 mt-6 overflow-y-auto no-scrollbar">
         {menuItems.map((item) => (
@@ -66,7 +89,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
       </div>
       <div className="p-6 text-[9px] text-slate-500 border-t border-slate-800 flex flex-col gap-1">
         <span className="font-black uppercase tracking-widest">Atreyu Servicios Digitales</span>
-        <span className="opacity-50">V2.5 PREMIUM</span>
+        <span className="opacity-50 italic">Professional Operating System</span>
       </div>
     </div>
   );
@@ -77,6 +100,38 @@ const App: React.FC = () => {
     return localStorage.getItem('pm_auth') === 'true';
   });
   const [data, setData] = useState<AppData>(db.getData());
+
+  useEffect(() => {
+    const migrateImages = async () => {
+      const currentData = db.getData();
+      let needsSaving = false;
+
+      for (const imprint of currentData.imprints) {
+        if (imprint.logoUrl && imprint.logoUrl.startsWith('data:')) {
+          await imageStore.save(imprint.id, imprint.logoUrl);
+          imprint.logoUrl = '';
+          needsSaving = true;
+        }
+      }
+
+      for (const book of currentData.books) {
+        if (book.coverUrl && book.coverUrl.startsWith('data:')) {
+          await imageStore.save(book.id, book.coverUrl);
+          book.coverUrl = '';
+          needsSaving = true;
+        }
+      }
+
+      if (needsSaving) {
+        db.saveData(currentData);
+        refreshData();
+      }
+    };
+
+    if (isAuthenticated) {
+      migrateImages();
+    }
+  }, [isAuthenticated]);
 
   const refreshData = () => {
     const freshData = db.getData();

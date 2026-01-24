@@ -2,6 +2,8 @@
 import React, { useEffect, useState } from 'react';
 import { AppData } from '../types';
 import { db } from '../db';
+import { imageStore } from '../imageStore';
+import { ASDLogo } from '../App';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -32,9 +34,30 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
         const success = await db.importData(file);
         if (success) {
           refreshData();
-          alert('Sistema restaurado íntegramente (Datos + Multimedia).');
+          window.dispatchEvent(new Event('brand_updated'));
+          alert('Sistema restaurado íntegramente.');
         }
       }
+    }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        await imageStore.save('SYSTEM_BRAND_LOGO', reader.result as string);
+        window.dispatchEvent(new Event('brand_updated'));
+        alert('Logo corporativo actualizado con éxito.');
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleResetLogo = async () => {
+    if (confirm('¿Restablecer logo por defecto?')) {
+      await imageStore.delete('SYSTEM_BRAND_LOGO');
+      window.dispatchEvent(new Event('brand_updated'));
     }
   };
 
@@ -60,47 +83,68 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
             onClick={() => db.exportData()}
             className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
           >
-            <i className="fa-solid fa-download"></i> Backup Completo (JSON)
+            <i className="fa-solid fa-download"></i> Backup Completo
           </button>
           
           <label className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
-            <i className="fa-solid fa-upload"></i> Restaurar Todo
+            <i className="fa-solid fa-upload"></i> Restaurar
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
-
-          <div className="hidden lg:flex flex-col items-end gap-1 ml-4 border-l border-slate-200 pl-6">
-            <div className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 text-[8px] font-black uppercase tracking-widest">
-              Almacenamiento HQ: Ilimitado
-            </div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Metadatos: {storageUsed}kb / Media: IndexedDB</p>
-          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Obras Publicadas" value={activeBooks} subtitle="Total catálogo activo" icon="fa-book-atlas" color="indigo" />
-        <StatCard title="Ingresos Totales" value={`${totalRevenue.toFixed(2)}€`} subtitle="Acumulado bruto" icon="fa-sack-dollar" color="emerald" />
-        <StatCard title="Páginas KENP" value={totalKenpc.toLocaleString()} subtitle="Lecturas KDP Select" icon="fa-book-open-reader" color="amber" />
-        <StatCard title="Producto Estrella" value={bookRevenue?.title || 'N/A'} subtitle={`${bookRevenue?.rev.toFixed(2) || 0}€ generados`} icon="fa-crown" color="purple" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* MÓDULO DE IDENTIDAD CORPORATIVA */}
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col">
+          <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 flex items-center gap-2">
+            <i className="fa-solid fa-fingerprint text-[#1CB5B1]"></i> Identidad ASD
+          </h2>
+          <div className="flex-1 flex flex-col items-center justify-center py-4">
+            <div className="w-32 h-32 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-100 flex items-center justify-center overflow-hidden mb-6 group relative">
+              <ASDLogo className="w-24 h-24 object-contain" />
+              <label className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
+                <i className="fa-solid fa-camera text-white text-xl mb-1"></i>
+                <span className="text-[8px] font-black text-white uppercase">Cambiar Logo</span>
+                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              </label>
+            </div>
+            <div className="text-center space-y-1">
+              <p className="text-xs font-black text-slate-900 uppercase">Logo Personalizado</p>
+              <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">Aplica a Login y Sidebar</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleResetLogo}
+            className="mt-6 w-full py-3 bg-slate-50 text-slate-400 rounded-xl text-[8px] font-black uppercase tracking-widest hover:text-red-500 transition-colors"
+          >
+            Restablecer Original
+          </button>
+        </div>
+
+        {/* STATS RÁPIDOS */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <StatCard title="Obras Publicadas" value={activeBooks} subtitle="Total catálogo activo" icon="fa-book-atlas" color="indigo" />
+          <StatCard title="Ingresos Totales" value={`${totalRevenue.toFixed(2)}€`} subtitle="Acumulado bruto" icon="fa-sack-dollar" color="emerald" />
+          <StatCard title="Páginas KENP" value={totalKenpc.toLocaleString()} subtitle="Lecturas KDP Select" icon="fa-book-open-reader" color="amber" />
+          <StatCard title="Producto Estrella" value={bookRevenue?.title || 'N/A'} subtitle={`${bookRevenue?.rev.toFixed(2) || 0}€ generados`} icon="fa-crown" color="purple" />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-white p-8 rounded-[3rem] shadow-sm border border-slate-100">
           <div className="flex justify-between items-center mb-10">
             <h2 className="text-lg font-black text-slate-900 uppercase tracking-tighter">Histórico de Facturación</h2>
-            <div className="flex items-center gap-4">
-              <span className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
-                <i className="fa-solid fa-circle text-[6px]"></i> Ventas Netas
-              </span>
-            </div>
+            <span className="flex items-center gap-2 text-[10px] font-black text-indigo-500 uppercase tracking-widest">
+              <i className="fa-solid fa-circle text-[6px]"></i> Rendimiento Global
+            </span>
           </div>
-          <div className="h-[350px]">
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={data.sales.slice(-30)}>
                 <defs>
                   <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#1CB5B1" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#1CB5B1" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -109,37 +153,31 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
                 <Tooltip 
                   contentStyle={{borderRadius: '24px', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '16px'}}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={5} fillOpacity={1} fill="url(#colorRev)" />
+                <Area type="monotone" dataKey="revenue" stroke="#1CB5B1" strokeWidth={4} fillOpacity={1} fill="url(#colorRev)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         <div className="bg-slate-950 text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden flex flex-col">
-          <div className="absolute top-0 right-0 p-8 opacity-5">
-            <i className="fa-solid fa-rocket text-9xl"></i>
-          </div>
-          <h2 className="text-sm font-black uppercase tracking-[0.3em] mb-8 text-indigo-400">Próximos Lanzamientos</h2>
-          <div className="space-y-6 flex-1">
+          <h2 className="text-sm font-black uppercase tracking-[0.3em] mb-8 text-indigo-400">Próximos Hitos</h2>
+          <div className="space-y-6 flex-1 overflow-y-auto no-scrollbar">
             {data.books.filter(b => b.status !== 'Publicado' && b.scheduledDate).slice(0, 5).map(book => (
-              <div key={book.id} className="flex items-center gap-4 group cursor-default">
-                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500 group-hover:scale-150 transition-transform"></div>
+              <div key={book.id} className="flex items-center gap-4 group">
+                <div className="w-1.5 h-1.5 rounded-full bg-indigo-500"></div>
                 <div>
                   <p className="text-xs font-black uppercase tracking-tight line-clamp-1">{book.title}</p>
                   <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">{book.scheduledDate}</p>
                 </div>
               </div>
             ))}
-            {data.books.filter(b => b.status !== 'Publicado').length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center opacity-30">
-                <i className="fa-solid fa-calendar-check text-4xl mb-4"></i>
-                <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Sin publicaciones <br/> programadas</p>
-              </div>
-            )}
           </div>
-          <button className="w-full mt-8 py-4 bg-slate-900 border border-slate-800 hover:bg-slate-800 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all">
-            Ir a la Agenda
-          </button>
+          <div className="mt-8 pt-8 border-t border-slate-900">
+             <div className="bg-indigo-500/10 p-4 rounded-2xl border border-indigo-500/20">
+               <p className="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-1">Estado del sistema</p>
+               <p className="text-[10px] text-white font-bold">Metadata: {storageUsed}kb / Media: IndexedDB</p>
+             </div>
+          </div>
         </div>
       </div>
     </div>
@@ -154,14 +192,14 @@ const StatCard = ({ title, value, subtitle, icon, color }: any) => {
     purple: 'bg-purple-50 text-purple-600',
   };
   return (
-    <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:translate-y-[-5px] transition-all duration-300">
-      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm ${colors[color]}`}>
+    <div className="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 flex flex-col justify-between hover:translate-y-[-5px] transition-all">
+      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl mb-6 shadow-sm ${colors[color]}`}>
         <i className={`fa-solid ${icon}`}></i>
       </div>
       <div>
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{title}</p>
-        <p className="text-3xl font-black text-slate-900 tracking-tighter leading-none mb-2">{value}</p>
-        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{subtitle}</p>
+        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+        <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none mb-2">{value}</p>
+        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{subtitle}</p>
       </div>
     </div>
   );

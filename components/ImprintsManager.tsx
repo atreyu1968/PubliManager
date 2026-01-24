@@ -45,7 +45,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
       const imprintToSave = { 
         ...formData, 
         id, 
-        logoUrl: '' // No guardamos en localStorage
+        logoUrl: '' // No guardamos la imagen pesada en localStorage
       } as Imprint;
 
       if (editingId) {
@@ -70,7 +70,8 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
 
   const openEdit = async (imprint: Imprint) => {
     const fullLogo = await imageStore.get(imprint.id);
-    setFormData({ ...imprint, logoUrl: fullLogo || '' });
+    // Priorizamos IndexedDB, pero si es null intentamos el fallback del objeto
+    setFormData({ ...imprint, logoUrl: fullLogo || imprint.logoUrl || '' });
     setEditingId(imprint.id);
   };
 
@@ -104,23 +105,28 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.imprints.map(imprint => (
-          <div key={imprint.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 overflow-hidden">
-                {logos[imprint.id] ? <img src={logos[imprint.id]} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
+        {data.imprints.map(imprint => {
+          // Lógica de visualización híbrida para evitar "pérdida" de imágenes
+          const displayLogo = logos[imprint.id] || imprint.logoUrl;
+          
+          return (
+            <div key={imprint.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 overflow-hidden">
+                  {displayLogo ? <img src={displayLogo} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => openEdit(imprint)} className="text-slate-300 hover:text-indigo-500 transition"><i className="fa-solid fa-pen-to-square"></i></button>
+                  <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('imprints', imprint.id); refreshData(); } }} className="text-slate-300 hover:text-red-500 transition"><i className="fa-solid fa-trash-can"></i></button>
               </div>
             </div>
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => openEdit(imprint)} className="text-slate-300 hover:text-indigo-500 transition"><i className="fa-solid fa-pen-to-square"></i></button>
-                <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('imprints', imprint.id); refreshData(); } }} className="text-slate-300 hover:text-red-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
