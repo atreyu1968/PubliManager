@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { AppData, Pseudonym } from '../types';
 import { db } from '../db';
+import { imageStore } from '../imageStore';
 
 interface Props {
   data: AppData;
@@ -9,12 +11,21 @@ interface Props {
 
 const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [photos, setPhotos] = useState<Record<string, string>>({});
   const [newAuthor, setNewAuthor] = useState<Partial<Pseudonym>>({
     name: '',
     bio: '',
     photoUrl: '',
     standardAcknowledgments: ''
   });
+
+  useEffect(() => {
+    const loadPhotos = async () => {
+      const allMedia = await imageStore.getAll();
+      setPhotos(allMedia);
+    };
+    loadPhotos();
+  }, [data.pseudonyms]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,23 +38,35 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (newAuthor.name) {
+      const id = editingId || Date.now().toString();
+      const tempPhoto = newAuthor.photoUrl;
+
+      const authorToSave = { 
+        ...newAuthor, 
+        id, 
+        photoUrl: '' 
+      } as Pseudonym;
+
       if (editingId) {
-        db.updateItem('pseudonyms', { ...newAuthor, id: editingId } as Pseudonym);
+        db.updateItem('pseudonyms', authorToSave);
       } else {
-        db.addItem('pseudonyms', { 
-          ...newAuthor, 
-          id: Date.now().toString()
-        } as Pseudonym);
+        db.addItem('pseudonyms', authorToSave);
       }
+
+      if (tempPhoto && tempPhoto.startsWith('data:')) {
+        await imageStore.save(id, tempPhoto);
+      }
+
       resetForm();
       refreshData();
     }
   };
 
-  const openEdit = (p: Pseudonym) => {
-    setNewAuthor(p);
+  const openEdit = async (p: Pseudonym) => {
+    const fullPhoto = await imageStore.get(p.id);
+    setNewAuthor({ ...p, photoUrl: fullPhoto || '' });
     setEditingId(p.id);
   };
 
@@ -100,7 +123,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
           <div key={p.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-4 relative group hover:shadow-xl transition-all">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100">
-                {p.photoUrl ? <img src={p.photoUrl} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-xl m-4"></i>}
+                {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-xl m-4"></i>}
               </div>
               <div className="flex-1">
                 <h3 className="font-black text-slate-800 tracking-tight">{p.name}</h3>

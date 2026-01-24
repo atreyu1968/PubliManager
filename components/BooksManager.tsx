@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppData, Book, BookStatus, Series, Pseudonym, Platform } from '../types';
 import { db } from '../db';
+import { imageStore } from '../imageStore';
 
 interface Props {
   data: AppData;
@@ -16,6 +17,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<BookStatus | 'Todos'>('Todos');
+  const [covers, setCovers] = useState<Record<string, string>>({});
   
   const [isCreatingNewSeries, setIsCreatingNewSeries] = useState(false);
   const [newSeriesName, setNewSeriesName] = useState('');
@@ -41,13 +43,19 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     d2dLink: ''
   });
 
+  // Cargar portadas desde IndexedDB al montar o cuando cambian los libros
+  useEffect(() => {
+    const loadCovers = async () => {
+      const allMedia = await imageStore.getAll();
+      setCovers(allMedia);
+    };
+    loadCovers();
+  }, [data.books]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 800000) {
-        alert("La imagen es muy grande. Por favor, usa una de menos de 800KB.");
-        return;
-      }
+      // Eliminado el límite de tamaño para permitir imágenes grandes HQ
       const reader = new FileReader();
       reader.onloadend = () => {
         setNewBook(prev => ({ ...prev, coverUrl: reader.result as string }));
@@ -65,7 +73,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const handleSaveBook = () => {
+  const handleSaveBook = async () => {
     if (!newBook.title) {
       alert("El título es obligatorio.");
       return;
@@ -104,46 +112,63 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     }
 
     const currentData = db.getData();
-    let updatedData: AppData;
+    const tempCoverUrl = newBook.coverUrl;
 
     if (editingId) {
       const index = currentData.books.findIndex(b => b.id === editingId);
       if (index !== -1) {
-        currentData.books[index] = { 
+        const bookToSave = { 
           ...newBook, 
           id: editingId,
-          pseudonymId: finalPseudonymId
+          pseudonymId: finalPseudonymId,
+          coverUrl: '' // No guardamos el base64 pesado en localStorage
         } as Book;
+        
+        currentData.books[index] = bookToSave;
+        
+        // Guardar la imagen en IndexedDB
+        if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
+           await imageStore.save(editingId, tempCoverUrl);
+        }
       }
-      updatedData = { ...currentData };
+      db.saveData(currentData);
     } else {
-      const newBooks: Book[] = LANGUAGES.map((lang, idx) => {
+      const timestamp = Date.now();
+      for (let idx = 0; idx < LANGUAGES.length; idx++) {
+        const lang = LANGUAGES[idx];
         const matchingImprint = currentData.imprints.find(i => i.language.toLowerCase() === lang.toLowerCase());
-        const timestamp = Date.now();
-        return { 
+        const bookId = `b-${lang.toLowerCase()}-${timestamp}-${idx}`;
+        
+        const freshBook = { 
           ...newBook, 
-          id: `b-${lang.toLowerCase()}-${timestamp}-${idx}`,
+          id: bookId,
           title: `${newBook.title} (${lang})`,
           language: lang,
           seriesId: isCreatingNewSeries ? finalSeriesMap[lang] : newBook.seriesId,
           pseudonymId: finalPseudonymId,
           imprintId: matchingImprint?.id || currentData.imprints[0]?.id || '1',
-          status: 'Sin escribir'
+          status: 'Sin escribir',
+          coverUrl: '' // No guardamos el base64 pesado en localStorage
         } as Book;
-      });
-      
-      const dataAfterCreations = db.getData(); 
-      updatedData = { ...dataAfterCreations, books: [...dataAfterCreations.books, ...newBooks] };
+
+        currentData.books.push(freshBook);
+
+        // Guardar la imagen en IndexedDB para cada traducción (si existe)
+        if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
+           await imageStore.save(bookId, tempCoverUrl);
+        }
+      }
+      db.saveData(currentData);
     }
 
-    if (db.saveData(updatedData)) {
-      refreshData();
-      closeModal();
-    }
+    refreshData();
+    closeModal();
   };
 
-  const openEdit = (book: Book) => {
-    setNewBook(book);
+  const openEdit = async (book: Book) => {
+    // Recuperar la imagen de IndexedDB antes de editar
+    const fullCover = await imageStore.get(book.id);
+    setNewBook({ ...book, coverUrl: fullCover || '' });
     setEditingId(book.id);
     setIsCreatingNewSeries(false);
     setIsCreatingNewAuthor(false);
@@ -233,11 +258,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         {filteredBooks.map(book => {
           const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
           const series = data.series.find(s => s.id === book.seriesId);
+          const currentCover = covers[book.id];
+          
           return (
             <div key={book.id} className="bg-white rounded-3xl p-4 border border-slate-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row items-center gap-6 group">
               <div className="w-16 h-24 bg-slate-50 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100 relative">
-                {book.coverUrl ? (
-                  <img src={book.coverUrl} className="w-full h-full object-cover" alt={book.title} />
+                {currentCover ? (
+                  <img src={currentCover} className="w-full h-full object-cover" alt={book.title} />
                 ) : (
                   <i className="fa-solid fa-book-bookmark text-slate-200 text-xl"></i>
                 )}
@@ -249,7 +276,6 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     {book.status}
                   </span>
                   
-                  {/* BADGES DE PLATAFORMA */}
                   <div className="flex gap-1">
                     {book.platforms?.includes('KDP') && (
                       <span className="bg-orange-100 text-orange-600 text-[7px] font-black px-2 py-0.5 rounded uppercase tracking-tighter border border-orange-200">KDP</span>
@@ -302,7 +328,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         })}
       </div>
 
-      {/* MODAL - GESTIÓN INTEGRAL KDP + D2D */}
+      {/* MODAL */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-xl flex items-center justify-center z-[100] p-4 overflow-y-auto">
           <div className="bg-white rounded-[3rem] p-8 lg:p-12 max-w-5xl w-full shadow-2xl my-auto animate-scaleIn relative text-slate-900">
@@ -327,7 +353,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     ) : (
                       <div className="text-center p-6 text-slate-300">
                         <i className="fa-solid fa-cloud-arrow-up text-4xl mb-4"></i>
-                        <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">JPG/PNG (Máx 800kb)</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest leading-relaxed">Arrastra o pulsa para subir imagen HQ</p>
                       </div>
                     )}
                     <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />

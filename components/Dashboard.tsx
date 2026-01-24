@@ -28,11 +28,11 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (confirm('Esto reemplazará todos los datos actuales. ¿Deseas continuar?')) {
+      if (confirm('Esto reemplazará todos los datos e IMÁGENES actuales. ¿Deseas continuar?')) {
         const success = await db.importData(file);
         if (success) {
           refreshData();
-          alert('Datos restaurados correctamente.');
+          alert('Sistema restaurado íntegramente (Datos + Multimedia).');
         }
       }
     }
@@ -60,19 +60,19 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
             onClick={() => db.exportData()}
             className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
           >
-            <i className="fa-solid fa-download"></i> Copia Seguridad
+            <i className="fa-solid fa-download"></i> Backup Completo (JSON)
           </button>
           
           <label className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
-            <i className="fa-solid fa-upload"></i> Restaurar
+            <i className="fa-solid fa-upload"></i> Restaurar Todo
             <input type="file" accept=".json" onChange={handleImport} className="hidden" />
           </label>
 
           <div className="hidden lg:flex flex-col items-end gap-1 ml-4 border-l border-slate-200 pl-6">
-            <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100 text-[8px] font-black uppercase tracking-widest">
-              Sincronización Local: Activa
+            <div className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full border border-indigo-100 text-[8px] font-black uppercase tracking-widest">
+              Almacenamiento HQ: Ilimitado
             </div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase">Uso: {storageUsed}kb / 5000kb</p>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Metadatos: {storageUsed}kb / Media: IndexedDB</p>
           </div>
         </div>
       </div>

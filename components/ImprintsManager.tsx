@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppData, Imprint } from '../types';
 import { db } from '../db';
+import { imageStore } from '../imageStore';
 
 interface Props {
   data: AppData;
@@ -10,11 +11,20 @@ interface Props {
 
 const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [logos, setLogos] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<Imprint>>({
     name: '',
     language: '',
     logoUrl: ''
   });
+
+  useEffect(() => {
+    const loadLogos = async () => {
+      const allMedia = await imageStore.getAll();
+      setLogos(allMedia);
+    };
+    loadLogos();
+  }, [data.imprints]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -27,16 +37,27 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (formData.name && formData.language) {
+      const id = editingId || Date.now().toString();
+      const tempLogo = formData.logoUrl;
+
+      const imprintToSave = { 
+        ...formData, 
+        id, 
+        logoUrl: '' // No guardamos en localStorage
+      } as Imprint;
+
       if (editingId) {
-        db.updateItem('imprints', { ...formData, id: editingId } as Imprint);
+        db.updateItem('imprints', imprintToSave);
       } else {
-        db.addItem('imprints', { 
-          ...formData,
-          id: Date.now().toString()
-        } as Imprint);
+        db.addItem('imprints', imprintToSave);
       }
+
+      if (tempLogo && tempLogo.startsWith('data:')) {
+        await imageStore.save(id, tempLogo);
+      }
+
       resetForm();
       refreshData();
     }
@@ -47,8 +68,9 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     setEditingId(null);
   };
 
-  const openEdit = (imprint: Imprint) => {
-    setFormData(imprint);
+  const openEdit = async (imprint: Imprint) => {
+    const fullLogo = await imageStore.get(imprint.id);
+    setFormData({ ...imprint, logoUrl: fullLogo || '' });
     setEditingId(imprint.id);
   };
 
@@ -86,7 +108,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
           <div key={imprint.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 overflow-hidden">
-                {imprint.logoUrl ? <img src={imprint.logoUrl} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
+                {logos[imprint.id] ? <img src={logos[imprint.id]} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
               </div>
               <div>
                 <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
