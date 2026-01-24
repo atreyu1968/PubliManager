@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { db } from './db';
 import { AppData } from './types';
+import { ASD_LOGO_IMAGE } from './assets';
 import Dashboard from './components/Dashboard';
 import BooksManager from './components/BooksManager';
 import SeriesManager from './components/SeriesManager';
@@ -13,12 +14,8 @@ import SalesTracker from './components/SalesTracker';
 import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
 
-const ASDLogo = ({ size = "w-12" }: { size?: string }) => (
-  <svg width="60" height="24" viewBox="0 0 280 120" fill="none" xmlns="http://www.w3.org/2000/svg" className={size}>
-    <path d="M20 100L55 20L90 100H70L65 85H45L40 100H20Z" fill="#2AD1CD" />
-    <path d="M100 80C100 95 115 105 135 105C155 105 165 95 165 80C165 70 155 65 135 60C115 55 105 50 105 40C105 30 115 20 135 20C155 20 165 30 165 40H145V40C145 35 140 32 135 32C130 32 125 35 125 40C125 45 130 48 140 52C155 58 175 65 175 82C175 100 155 115 135 115C115 115 95 105 95 82H100Z" fill="#1CB5B1" />
-    <path d="M185 20H220C255 20 275 40 275 67C275 94 255 115 220 115H185V20Z" fill="#F99F2A" />
-  </svg>
+const ASDLogo = ({ className = "w-16" }: { className?: string }) => (
+  <img src={ASD_LOGO_IMAGE} alt="ASD Logo" className={className} />
 );
 
 const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
@@ -38,12 +35,12 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     <div className="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-xl z-50">
       <div className="p-6 border-b border-slate-800 flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <ASDLogo size="w-16" />
+          <ASDLogo className="w-14" />
           <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase">Atreyu ASD</span>
         </div>
         <div className="mt-2 text-[10px] font-bold text-slate-400 bg-slate-800/50 px-2 py-1 rounded inline-block w-fit">PUBLIMANAGER AI</div>
       </div>
-      <nav className="flex-1 mt-6 overflow-y-auto">
+      <nav className="flex-1 mt-6 overflow-y-auto no-scrollbar">
         {menuItems.map((item) => (
           <Link
             key={item.path}
@@ -69,7 +66,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
       </div>
       <div className="p-6 text-[9px] text-slate-500 border-t border-slate-800 flex flex-col gap-1">
         <span className="font-black uppercase tracking-widest">Atreyu Servicios Digitales</span>
-        <span className="opacity-50">V2.4.2 PREMIUM</span>
+        <span className="opacity-50">V2.5 PREMIUM</span>
       </div>
     </div>
   );
