@@ -15,7 +15,6 @@ import SalesTracker from './components/SalesTracker';
 import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
 
-// Componente de logo reactivo al sistema de marca
 export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
 
@@ -25,7 +24,6 @@ export const ASDLogo = ({ className = "w-16", forceDefault = false }: { classNam
       setCustomLogo(logo);
     };
     loadBrand();
-    // Escuchar cambios de marca
     window.addEventListener('brand_updated', loadBrand);
     return () => window.removeEventListener('brand_updated', loadBrand);
   }, []);
@@ -34,7 +32,8 @@ export const ASDLogo = ({ className = "w-16", forceDefault = false }: { classNam
     <img 
       src={(!forceDefault && customLogo) ? customLogo : ASD_LOGO_IMAGE} 
       alt="ASD Logo" 
-      className={`${className} transition-opacity duration-500`} 
+      className={className}
+      style={{ filter: 'none' }} 
     />
   );
 };
@@ -56,10 +55,10 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     <div className="w-64 bg-slate-900 text-white h-screen fixed left-0 top-0 flex flex-col shadow-xl z-50">
       <div className="p-6 border-b border-slate-800 flex flex-col gap-2">
         <div className="flex items-center gap-3">
-          <ASDLogo className="w-12 h-12 object-contain" />
+          <ASDLogo className="w-10 h-auto" />
           <div className="flex flex-col">
-            <span className="text-[10px] font-black tracking-widest text-slate-500 uppercase leading-none">Atreyu ASD</span>
-            <span className="text-[8px] font-bold text-[#1CB5B1] uppercase mt-1">Publisher v2.5</span>
+            <span className="text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase leading-none">Atreyu ASD</span>
+            <span className="text-[8px] font-bold text-[#1CB5B1] uppercase mt-1.5">Elite OS v2.5</span>
           </div>
         </div>
       </div>
@@ -82,14 +81,10 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
       <div className="p-4 border-t border-slate-800">
         <button 
           onClick={onLogout}
-          className="w-full flex items-center gap-3 px-4 py-2 text-xs font-bold text-slate-500 hover:text-red-400 transition-colors uppercase tracking-widest"
+          className="w-full flex items-center gap-3 px-4 py-2 text-[10px] font-black text-slate-500 hover:text-red-400 transition-colors uppercase tracking-[0.2em]"
         >
           <i className="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
         </button>
-      </div>
-      <div className="p-6 text-[9px] text-slate-500 border-t border-slate-800 flex flex-col gap-1">
-        <span className="font-black uppercase tracking-widest">Atreyu Servicios Digitales</span>
-        <span className="opacity-50 italic">Professional Operating System</span>
       </div>
     </div>
   );
@@ -101,61 +96,17 @@ const App: React.FC = () => {
   });
   const [data, setData] = useState<AppData>(db.getData());
 
-  useEffect(() => {
-    const migrateImages = async () => {
-      const currentData = db.getData();
-      let needsSaving = false;
-
-      for (const imprint of currentData.imprints) {
-        if (imprint.logoUrl && imprint.logoUrl.startsWith('data:')) {
-          await imageStore.save(imprint.id, imprint.logoUrl);
-          imprint.logoUrl = '';
-          needsSaving = true;
-        }
-      }
-
-      for (const book of currentData.books) {
-        if (book.coverUrl && book.coverUrl.startsWith('data:')) {
-          await imageStore.save(book.id, book.coverUrl);
-          book.coverUrl = '';
-          needsSaving = true;
-        }
-      }
-
-      if (needsSaving) {
-        db.saveData(currentData);
-        refreshData();
-      }
-    };
-
-    if (isAuthenticated) {
-      migrateImages();
-    }
-  }, [isAuthenticated]);
-
   const refreshData = () => {
     const freshData = db.getData();
     setData(freshData);
   };
 
-  const handleLogin = () => {
-    localStorage.setItem('pm_auth', 'true');
-    setIsAuthenticated(true);
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('pm_auth');
-    setIsAuthenticated(false);
-  };
-
-  if (!isAuthenticated) {
-    return <Login onLogin={handleLogin} />;
-  }
+  if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
   return (
     <HashRouter>
       <div className="flex min-h-screen bg-slate-50 text-slate-900">
-        <Sidebar onLogout={handleLogout} />
+        <Sidebar onLogout={() => { localStorage.removeItem('pm_auth'); setIsAuthenticated(false); }} />
         <main className="flex-1 ml-64 p-8 flex flex-col overflow-x-hidden">
           <div className="flex-1">
             <Routes>
@@ -170,12 +121,27 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
-          <footer className="mt-auto py-8 border-t border-slate-200 flex items-center justify-center gap-4 opacity-60">
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Atreyu servicios digitales</span>
+          
+          {/* PIE DE PÁGINA ASD ELITE REDISEÑADO */}
+          <footer className="mt-40 pb-16 flex flex-col items-center justify-center gap-8">
+            <div className="flex items-center gap-5 opacity-20">
+              <div className="h-[1px] w-32 bg-slate-400"></div>
+              <ASDLogo className="w-10 h-auto grayscale" forceDefault />
+              <div className="h-[1px] w-32 bg-slate-400"></div>
             </div>
-            <span className="text-slate-300">|</span>
-            <p className="text-[9px] text-slate-400 font-medium tracking-tight">© {new Date().getFullYear()} Indie PubliManager</p>
+            <div className="text-center space-y-3">
+              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em]">
+                Atreyu Servicios Digitales &copy; {new Date().getFullYear()}
+              </p>
+              <p className="text-[9px] text-slate-300 font-bold uppercase tracking-[0.4em]">
+                Secure Publishing Infrastructure · Hybrid Edition v2.5
+              </p>
+              <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-black uppercase tracking-widest opacity-50">
+                <span>Indie Ecosystem</span>
+                <span>•</span>
+                <span>AI Core Ready</span>
+              </div>
+            </div>
           </footer>
         </main>
       </div>

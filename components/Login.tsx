@@ -18,6 +18,7 @@ const Login: React.FC<Props> = ({ onLogin }) => {
     setIsLoading(true);
     setTimeout(() => {
       if (pass.toLowerCase() === 'admin') {
+        localStorage.setItem('pm_auth', 'true');
         onLogin();
       } else {
         setError(true);
@@ -31,6 +32,7 @@ const Login: React.FC<Props> = ({ onLogin }) => {
   return (
     <div className="fixed inset-0 w-full h-full bg-[#000000] flex flex-col items-center justify-center p-6 selection:bg-[#F99F2A] selection:text-white overflow-hidden">
       
+      {/* Fondos difusos corporativos */}
       <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
         <div className="absolute top-[-10%] left-[-5%] w-[40%] h-[40%] bg-[#1CB5B1] blur-[150px] rounded-full"></div>
         <div className="absolute bottom-[-10%] right-[-5%] w-[40%] h-[40%] bg-[#F99F2A] blur-[150px] rounded-full"></div>
@@ -38,9 +40,9 @@ const Login: React.FC<Props> = ({ onLogin }) => {
 
       <div className="w-full max-w-[420px] fade-in flex flex-col items-center relative z-10">
         
-        {/* LOGOTIPO DINÁMICO */}
+        {/* LOGOTIPO LIMPIO (Sin sombras blancas) */}
         <div className="mb-14 transform scale-125">
-          <ASDLogo className="w-[200px] h-auto drop-shadow-[0_0_30px_rgba(255,255,255,0.15)]" />
+          <ASDLogo className="w-[200px] h-auto" />
         </div>
 
         <div className="text-center mb-10">
