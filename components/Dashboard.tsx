@@ -1,6 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AppData } from '../types';
+import { db } from '../db';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -8,7 +9,7 @@ interface Props {
   refreshData: () => void;
 }
 
-const Dashboard: React.FC<Props> = ({ data }) => {
+const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
   const [storageUsed, setStorageUsed] = useState(0);
   
   useEffect(() => {
@@ -24,8 +25,20 @@ const Dashboard: React.FC<Props> = ({ data }) => {
     calculateStorage();
   }, [data]);
 
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (confirm('Esto reemplazará todos los datos actuales. ¿Deseas continuar?')) {
+        const success = await db.importData(file);
+        if (success) {
+          refreshData();
+          alert('Datos restaurados correctamente.');
+        }
+      }
+    }
+  };
+
   const activeBooks = data.books.filter(b => b.status === 'Publicado').length;
-  const pendingTasks = data.tasks.filter(t => !t.completed).length;
   const totalRevenue = data.sales.reduce((acc, curr) => acc + curr.revenue, 0);
   const totalKenpc = data.sales.reduce((acc, curr) => acc + curr.kenpc, 0);
 
@@ -36,16 +49,31 @@ const Dashboard: React.FC<Props> = ({ data }) => {
 
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
-      <div className="flex justify-between items-end">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase">Panel Editorial</h1>
-          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-1">Control de operaciones Atreyu ASD</p>
+          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Panel Editorial</h1>
+          <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mt-2">Atreyu ASD Operating System</p>
         </div>
-        <div className="hidden md:flex flex-col items-end gap-1">
-          <div className="bg-emerald-50 text-emerald-600 px-4 py-1 rounded-full border border-emerald-100 text-[10px] font-black uppercase tracking-widest">
-            Sincronización: Activa
+        
+        <div className="flex flex-wrap gap-3">
+          <button 
+            onClick={() => db.exportData()}
+            className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95"
+          >
+            <i className="fa-solid fa-download"></i> Copia Seguridad
+          </button>
+          
+          <label className="flex items-center gap-2 bg-white border border-slate-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-slate-50 transition-all shadow-sm active:scale-95 cursor-pointer">
+            <i className="fa-solid fa-upload"></i> Restaurar
+            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+          </label>
+
+          <div className="hidden lg:flex flex-col items-end gap-1 ml-4 border-l border-slate-200 pl-6">
+            <div className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full border border-emerald-100 text-[8px] font-black uppercase tracking-widest">
+              Sincronización Local: Activa
+            </div>
+            <p className="text-[9px] text-slate-400 font-bold uppercase">Uso: {storageUsed}kb / 5000kb</p>
           </div>
-          <p className="text-[9px] text-slate-400 font-bold uppercase mr-2">Uso: {storageUsed}kb / 5000kb</p>
         </div>
       </div>
 
