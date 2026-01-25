@@ -27,6 +27,10 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
   const [isCreatingNewAuthor, setIsCreatingNewAuthor] = useState(false);
   const [newAuthorName, setNewAuthorName] = useState('');
 
+  // Estados para loggear acción personalizada en la edición
+  const [customActionToLog, setCustomActionToLog] = useState('');
+  const [customActionDetails, setCustomActionDetails] = useState('');
+
   const [newBook, setNewBook] = useState<Partial<Book>>({
     title: '',
     pseudonymId: '',
@@ -65,42 +69,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const handlePlatformToggle = (platform: Platform) => {
-    const currentPlatforms = newBook.platforms || [];
-    if (currentPlatforms.includes(platform)) {
-      setNewBook({ ...newBook, platforms: currentPlatforms.filter(p => p !== platform) });
-    } else {
-      setNewBook({ ...newBook, platforms: [...currentPlatforms, platform] });
-    }
-  };
-
   const handleSaveBook = async () => {
     if (!newBook.title) {
       alert("El título es obligatorio.");
       return;
     }
     
-    if (!isCreatingNewAuthor && !newBook.pseudonymId) {
-      alert("Debes seleccionar o crear un autor.");
-      return;
-    }
-
-    let finalSeriesMap: Record<string, string> = {}; 
     let finalPseudonymId = newBook.pseudonymId;
-
-    if (isCreatingNewSeries && newSeriesName.trim()) {
-      const timestamp = Date.now();
-      LANGUAGES.forEach((lang, idx) => {
-        const s: Series = {
-          id: `s-vuelo-${lang.toLowerCase()}-${timestamp}-${idx}`,
-          name: `${newSeriesName.trim()} (${lang})`,
-          description: `Saga creada al vuelo desde el proyecto: ${newBook.title}`,
-          language: lang
-        };
-        db.addItem('series', s);
-        finalSeriesMap[lang] = s.id;
-      });
-    }
 
     if (isCreatingNewAuthor && newAuthorName.trim()) {
       const newAuthor: Pseudonym = {
@@ -132,12 +107,16 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
            await imageStore.save(editingId, tempCoverUrl);
         }
 
-        // LOGGING MODIFICACIÓN
-        let details = `Actualización de metadatos.`;
-        if (oldBook.status !== bookToSave.status) {
-          details = `Cambio de estado: ${oldBook.status} -> ${bookToSave.status}.`;
+        // Determinar acción para el log
+        if (customActionToLog) {
+           db.logAction(editingId, bookToSave.title, customActionToLog, customActionDetails || `Hito alcanzado: ${customActionToLog}`);
+        } else {
+           let details = `Actualización de metadatos.`;
+           if (oldBook.status !== bookToSave.status) {
+             details = `Cambio de estado: ${oldBook.status} -> ${bookToSave.status}.`;
+           }
+           db.logAction(editingId, bookToSave.title, oldBook.status !== bookToSave.status ? 'Cambio de Estado' : 'Modificación', details);
         }
-        db.logAction(editingId, bookToSave.title, oldBook.status !== bookToSave.status ? 'Cambio de Estado' : 'Modificación', details);
       }
       db.saveData(currentData);
     } else {
@@ -152,7 +131,6 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
           id: bookId,
           title: `${newBook.title} (${lang})`,
           language: lang,
-          seriesId: isCreatingNewSeries ? finalSeriesMap[lang] : newBook.seriesId,
           pseudonymId: finalPseudonymId,
           imprintId: matchingImprint?.id || currentData.imprints[0]?.id || '1',
           status: 'Sin escribir',
@@ -164,8 +142,6 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
            await imageStore.save(bookId, tempCoverUrl);
         }
-
-        // LOGGING CREACIÓN
         db.logAction(bookId, freshBook.title, 'Creación', `Nuevo proyecto iniciado para el idioma ${lang}.`);
       }
       db.saveData(currentData);
@@ -179,18 +155,19 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     const fullCover = await imageStore.get(book.id);
     setNewBook({ ...book, coverUrl: fullCover || book.coverUrl || '' });
     setEditingId(book.id);
-    setIsCreatingNewSeries(false);
     setIsCreatingNewAuthor(false);
+    setCustomActionToLog('');
+    setCustomActionDetails('');
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
-    setIsCreatingNewSeries(false);
     setIsCreatingNewAuthor(false);
-    setNewSeriesName('');
     setNewAuthorName('');
+    setCustomActionToLog('');
+    setCustomActionDetails('');
     setNewBook({ 
       title: '', pseudonymId: '', seriesId: '', seriesOrder: 1, description: '', platforms: ['KDP'], 
       status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', asin: ''
@@ -201,16 +178,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
     const series = data.series.find(s => s.id === book.seriesId);
     const searchLow = searchTerm.toLowerCase();
-    
     const matchesSearch = book.title.toLowerCase().includes(searchLow) || 
                           (author?.name.toLowerCase().includes(searchLow)) ||
                           (series?.name.toLowerCase().includes(searchLow)) ||
                           (book.asin?.toLowerCase().includes(searchLow));
-    
     const matchesStatus = statusFilter === 'Todos' || book.status === statusFilter;
     const matchesAuthor = authorFilter === 'Todos' || book.pseudonymId === authorFilter;
     const matchesImprint = imprintFilter === 'Todos' || book.imprintId === imprintFilter;
-    
     return matchesSearch && matchesStatus && matchesAuthor && matchesImprint;
   }).sort((a, b) => a.title.localeCompare(b.title));
 
@@ -224,6 +198,8 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
+  const isListView = data.settings.viewMode === 'list';
+
   return (
     <div className="space-y-6 text-slate-900 pb-20 animate-fadeIn">
       {/* HEADER COMPACTO */}
@@ -234,7 +210,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
             Catálogo Editorial
           </h1>
           <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-            {data.books.length} Proyectos en el sistema
+            Vista actual: {isListView ? 'Lista' : 'Rejilla'} • {filteredBooks.length} Proyectos
           </p>
         </div>
         <button onClick={() => setIsModalOpen(true)} className="w-full lg:w-auto bg-slate-900 text-white px-6 py-3.5 rounded-2xl hover:bg-indigo-600 shadow-xl transition-all active:scale-95 font-black text-[9px] tracking-[0.2em] uppercase">
@@ -248,7 +224,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
           <i className="fa-solid fa-magnifying-glass absolute left-6 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors"></i>
           <input 
             type="text" 
-            placeholder="Buscar por título, autor, saga o ASIN..." 
+            placeholder="Buscar por título, autor o ASIN..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-white border border-slate-100 rounded-2xl py-4 pl-16 pr-6 text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-indigo-500/10 transition-all outline-none"
@@ -256,61 +232,43 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Estado</label>
-            <div className="flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              {['Todos', ...STATUS_OPTIONS].map(opt => (
-                <button 
-                  key={opt}
-                  onClick={() => setStatusFilter(opt as any)}
-                  className={`px-3 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${statusFilter === opt ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-white text-slate-400 border-slate-100 hover:bg-slate-50'}`}
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
+          <div className="flex-1 min-w-[150px]">
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-600 outline-none"
+            >
+              <option value="Todos">Todos los estados</option>
+              {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+            </select>
           </div>
-
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Por Autor</label>
+          <div className="flex-1 min-w-[150px]">
             <select 
               value={authorFilter}
               onChange={(e) => setAuthorFilter(e.target.value)}
-              className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/10"
+              className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-600 outline-none"
             >
               <option value="Todos">Todos los autores</option>
               {data.pseudonyms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </div>
-
-          <div className="flex-1 min-w-[200px]">
-            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1.5 block ml-1">Por Sello</label>
-            <select 
-              value={imprintFilter}
-              onChange={(e) => setImprintFilter(e.target.value)}
-              className="w-full bg-white border border-slate-100 rounded-xl px-4 py-2.5 text-[10px] font-bold text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/10"
-            >
-              <option value="Todos">Todos los sellos</option>
-              {data.imprints.map(i => <option key={i.id} value={i.id}>{i.name} ({i.language})</option>)}
-            </select>
-          </div>
         </div>
       </div>
 
-      {/* LISTADO DE TARJETAS */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+      {/* LISTADO DINÁMICO (GRID / LIST) */}
+      <div className={isListView ? "space-y-3" : "grid grid-cols-1 xl:grid-cols-2 gap-4"}>
         {filteredBooks.map(book => {
           const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
           const imprint = data.imprints.find(i => i.id === book.imprintId);
           const displayCover = covers[book.id] || book.coverUrl;
           
           return (
-            <div key={book.id} className="bg-white rounded-[2rem] p-4 border border-slate-100 shadow-sm hover:shadow-xl transition-all flex items-center gap-5 group relative overflow-hidden">
-              <div className="w-16 h-24 bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100">
+            <div key={book.id} className={`bg-white rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex items-center gap-5 group relative overflow-hidden ${isListView ? 'p-3' : 'p-4'}`}>
+              <div className={`${isListView ? 'w-10 h-14' : 'w-16 h-24'} bg-slate-50 rounded-xl overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100`}>
                 {displayCover ? (
                   <img src={displayCover} className="w-full h-full object-cover" alt={book.title} />
                 ) : (
-                  <i className="fa-solid fa-book-bookmark text-slate-200 text-xl"></i>
+                  <i className={`fa-solid fa-book-bookmark text-slate-200 ${isListView ? 'text-sm' : 'text-xl'}`}></i>
                 )}
               </div>
               <div className="flex-1 min-w-0 py-1">
@@ -318,61 +276,40 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                   <span className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest border ${getStatusStyle(book.status)}`}>
                     {book.status}
                   </span>
-                  <span className="text-[8px] font-black text-indigo-400 uppercase tracking-widest">
-                    {imprint?.name}
-                  </span>
                 </div>
-                <h3 className="text-sm font-black text-slate-900 truncate pr-4 leading-tight">{book.title}</h3>
+                <h3 className={`${isListView ? 'text-xs' : 'text-sm'} font-black text-slate-900 truncate pr-4 leading-tight`}>{book.title}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <p className="text-[9px] font-bold text-slate-400 uppercase">Autor: {author?.name || 'Desconocido'}</p>
-                  {book.asin && (
-                    <span className="text-[9px] bg-slate-100 px-1.5 py-0.5 rounded font-mono font-bold text-slate-600 uppercase">
-                      ASIN: {book.asin}
-                    </span>
-                  )}
+                  <p className="text-[9px] font-bold text-slate-400 uppercase">{author?.name || 'Desconocido'}</p>
                 </div>
-                <p className="text-[8px] font-bold text-slate-300 uppercase mt-0.5">{book.language}</p>
               </div>
               
               <div className="flex items-center gap-2 pr-2">
-                {book.amazonLink && (
-                  <a href={book.amazonLink} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all shadow-sm group/btn">
-                    <i className="fa-brands fa-amazon text-base"></i>
-                  </a>
-                )}
-                {book.d2dLink && (
-                  <a href={book.d2dLink} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all shadow-sm">
-                    <i className="fa-solid fa-link text-base"></i>
-                  </a>
-                )}
-                <div className="w-[1px] h-10 bg-slate-100 mx-1 hidden sm:block"></div>
-                <div className="flex flex-col gap-1">
-                  <button onClick={() => openEdit(book)} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-900 hover:text-white transition-all">
-                    <i className="fa-solid fa-edit"></i>
-                  </button>
-                  <button onClick={() => { if(confirm('¿Eliminar proyecto permanentemente?')) { db.deleteItem('books', book.id); db.logAction(book.id, book.title, 'Eliminación', 'Proyecto eliminado del catálogo maestro.'); refreshData(); } }} className="p-2.5 text-slate-200 hover:text-red-500 transition-colors">
+                <button onClick={() => openEdit(book)} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-900 hover:text-white transition-all">
+                  <i className="fa-solid fa-edit"></i>
+                </button>
+                {!isListView && (
+                  <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('books', book.id); refreshData(); } }} className="p-2.5 text-slate-200 hover:text-red-500 transition-colors">
                     <i className="fa-solid fa-trash-can"></i>
                   </button>
-                </div>
+                )}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* MODAL DE EDICIÓN (LAPTOP FRIENDLY) */}
+      {/* MODAL DE EDICIÓN / LANZAMIENTO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 lg:p-10">
           <div className="bg-white rounded-[2.5rem] max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn border border-white/10">
             
             <div className="px-8 py-5 border-b border-slate-100 bg-white shrink-0 flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                  {editingId ? 'Editor Maestro' : 'Nuevo Lanzamiento Global'}
+                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
+                  {editingId ? 'Editor Maestro' : 'Nuevo Lanzamiento Maestro'}
                 </h2>
-                <p className="text-slate-400 font-bold uppercase text-[8px] tracking-[0.3em] mt-1.5">Atreyu Digital Infrastructure v2.5</p>
               </div>
-              <button onClick={closeModal} className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-300 hover:text-slate-900 transition">
+              <button onClick={closeModal} className="w-9 h-9 rounded-full hover:bg-slate-100 flex items-center justify-center text-slate-300">
                 <i className="fa-solid fa-times text-lg"></i>
               </button>
             </div>
@@ -381,49 +318,27 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                 
                 <div className="lg:col-span-4 space-y-6">
-                  <div className="bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-4">Arte Final HQ</label>
-                    <div className="aspect-[3/4] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center relative group transition-all hover:border-indigo-400 max-w-[220px] mx-auto shadow-inner">
+                  <div className="bg-white p-5 rounded-3xl border border-slate-100">
+                    <div className="aspect-[3/4] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center relative group transition-all hover:border-indigo-400 max-w-[220px] mx-auto">
                       {newBook.coverUrl ? (
                         <img src={newBook.coverUrl} className="w-full h-full object-cover" />
                       ) : (
-                        <div className="text-center p-6 text-slate-300">
-                          <i className="fa-solid fa-cloud-arrow-up text-3xl mb-3"></i>
-                          <p className="text-[9px] font-black uppercase tracking-widest leading-tight">Subir Portada<br/>Maestra</p>
-                        </div>
+                        <i className="fa-solid fa-cloud-arrow-up text-3xl text-slate-200"></i>
                       )}
                       <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                   </div>
 
-                  <div className="bg-slate-900 p-6 rounded-3xl shadow-xl space-y-5">
+                  <div className="bg-slate-900 p-6 rounded-3xl space-y-5">
                     <div>
                       <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-3">Workflow de Producción</label>
                       <select 
                         value={newBook.status} 
                         onChange={e => setNewBook({...newBook, status: e.target.value as BookStatus})}
-                        className="w-full bg-slate-800 border-none rounded-xl p-3 text-[10px] font-black text-white uppercase outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full bg-slate-800 border-none rounded-xl p-3 text-[10px] font-black text-white uppercase outline-none"
                       >
-                        {STATUS_OPTIONS.map(opt => <option key={opt} value={opt} className="bg-slate-800 text-xs">{opt}</option>)}
+                        {STATUS_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                       </select>
-                    </div>
-                    <div>
-                      <label className="block text-[8px] font-black text-slate-500 uppercase tracking-widest mb-3">Fecha de Lanzamiento</label>
-                      <input 
-                        type="date" 
-                        value={newBook.scheduledDate} 
-                        onChange={e => setNewBook({...newBook, scheduledDate: e.target.value})}
-                        className="w-full bg-slate-800 border-none rounded-xl p-3 text-[10px] font-black text-white outline-none focus:ring-2 focus:ring-indigo-500"
-                      />
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl border border-slate-800">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">KDP Select (KU)</span>
-                      <input 
-                        type="checkbox" 
-                        checked={newBook.kindleUnlimited} 
-                        onChange={e => setNewBook({...newBook, kindleUnlimited: e.target.checked})}
-                        className="w-5 h-5 accent-indigo-500 rounded"
-                      />
                     </div>
                   </div>
                 </div>
@@ -431,64 +346,61 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                 <div className="lg:col-span-8 space-y-6">
                   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                     <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Título Principal de la Obra</label>
-                    <input type="text" placeholder="Nombre completo del proyecto..." value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-black text-lg text-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-inner" />
+                    <input type="text" value={newBook.title} onChange={e => setNewBook({...newBook, title: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-black text-lg outline-none" />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                      <div className="flex justify-between items-center mb-3">
-                        <label className="text-[9px] font-black text-slate-400 uppercase">Autor / Identidad</label>
-                        <button onClick={() => setIsCreatingNewAuthor(!isCreatingNewAuthor)} className="text-[8px] font-black uppercase text-indigo-600 hover:underline">
-                          {isCreatingNewAuthor ? 'Volver' : '+ Nuevo'}
-                        </button>
-                      </div>
-                      {isCreatingNewAuthor ? (
-                        <input type="text" placeholder="Nombre artístico..." value={newAuthorName} onChange={e => setNewAuthorName(e.target.value)} className="w-full bg-slate-50 border border-indigo-100 rounded-xl p-3.5 text-xs font-black text-slate-900 outline-none" />
-                      ) : (
-                        <select value={newBook.pseudonymId} onChange={e => setNewBook({...newBook, pseudonymId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-900 outline-none">
+                        <label className="text-[9px] font-black text-slate-400 uppercase mb-3 block">Autor / Identidad</label>
+                        <select value={newBook.pseudonymId} onChange={e => setNewBook({...newBook, pseudonymId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold outline-none">
                           <option value="">Seleccionar autor...</option>
                           {data.pseudonyms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
-                      )}
                     </div>
 
                     <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                       <label className="block text-[9px] font-black text-slate-400 uppercase mb-3">Sello Editorial</label>
-                      <select value={newBook.imprintId} onChange={e => setNewBook({...newBook, imprintId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold text-slate-900 outline-none">
+                      <select value={newBook.imprintId} onChange={e => setNewBook({...newBook, imprintId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-3.5 text-xs font-bold outline-none">
                         {data.imprints.map(i => <option key={i.id} value={i.id}>{i.name} ({i.language})</option>)}
                       </select>
                     </div>
                   </div>
 
-                  <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm space-y-4">
-                    <label className="block text-[9px] font-black text-slate-400 uppercase tracking-widest">Distribución y Enlaces</label>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="relative">
-                        <i className="fa-brands fa-amazon absolute left-4 top-1/2 -translate-y-1/2 text-orange-400"></i>
-                        <input type="text" placeholder="Enlace KDP" value={newBook.amazonLink} onChange={e => setNewBook({...newBook, amazonLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-orange-500/20" />
-                      </div>
-                      <div className="relative">
-                        <i className="fa-solid fa-barcode absolute left-4 top-1/2 -translate-y-1/2 text-indigo-400"></i>
-                        <input type="text" placeholder="ASIN Amazon" value={newBook.asin} onChange={e => setNewBook({...newBook, asin: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/20" />
-                      </div>
-                      <div className="relative">
-                        <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"></i>
-                        <input type="text" placeholder="Enlace D2D" value={newBook.d2dLink} onChange={e => setNewBook({...newBook, d2dLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-blue-500/20" />
-                      </div>
+                  {/* SECCIÓN DE HITO PERSONALIZADO AL EDITAR */}
+                  {editingId && (
+                    <div className="bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100 space-y-4">
+                       <label className="block text-[9px] font-black text-indigo-600 uppercase tracking-widest">Registrar Acción Personalizada</label>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <select 
+                            value={customActionToLog}
+                            onChange={(e) => setCustomActionToLog(e.target.value)}
+                            className="w-full bg-white border border-indigo-100 rounded-xl p-3 text-xs font-bold outline-none"
+                          >
+                            <option value="">Acción por defecto (Modificación)</option>
+                            {data.settings.customActions.map(a => <option key={a} value={a}>{a}</option>)}
+                          </select>
+                          <input 
+                            type="text" 
+                            placeholder="Notas opcionales del hito..."
+                            value={customActionDetails}
+                            onChange={(e) => setCustomActionDetails(e.target.value)}
+                            className="w-full bg-white border border-indigo-100 rounded-xl p-3 text-xs outline-none"
+                          />
+                       </div>
                     </div>
-                  </div>
+                  )}
 
                   <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
                     <label className="block text-[9px] font-black text-slate-400 uppercase mb-3">Argumento / Sinopsis Maestra</label>
-                    <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 h-32 text-xs leading-relaxed text-slate-900 outline-none shadow-inner resize-none" placeholder="Escribe el resumen del libro para el motor de IA..."></textarea>
+                    <textarea value={newBook.description} onChange={e => setNewBook({...newBook, description: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 h-32 text-xs leading-relaxed outline-none resize-none" placeholder="Escribe el resumen del libro..."></textarea>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div className="px-8 py-5 border-t border-slate-100 bg-white shrink-0 flex gap-4">
-              <button onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase hover:text-slate-900 transition-colors">DESCARTAR</button>
-              <button onClick={handleSaveBook} className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl hover:bg-indigo-600 transition-all active:scale-95">
+            <div className="px-8 py-5 border-t border-slate-100 bg-white flex gap-4">
+              <button onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase">DESCARTAR</button>
+              <button onClick={handleSaveBook} className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl transition-all active:scale-95">
                 {editingId ? 'GUARDAR CAMBIOS' : 'CREAR LANZAMIENTO MAESTRO'}
               </button>
             </div>

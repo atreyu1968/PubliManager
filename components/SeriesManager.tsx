@@ -39,7 +39,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
     } else {
       const timestamp = Date.now();
       const newSeriesList: Series[] = LANGUAGES.map((lang, idx) => ({
-        id: `s-${lang.toLowerCase()}-${timestamp}-${idx}`,
+        id: `s-${lang.toLowerCase().replace(/[^a-z]/g, '')}-${timestamp}-${idx}`,
         name: `${formData.name} (${lang})`,
         description: formData.description || '',
         language: lang
@@ -81,7 +81,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
             Arquitectura de Sagas
           </h1>
           <p className="text-sm text-slate-400 font-bold mt-1 uppercase tracking-widest">
-            {data.series.length} Series registradas
+            {data.series.length} Series registradas • Cobertura Multi-idioma
           </p>
         </div>
         <button onClick={() => setIsModalOpen(true)} className="w-full lg:w-auto bg-slate-900 text-white px-10 py-5 rounded-3xl hover:bg-amber-600 shadow-2xl transition-all active:scale-95 font-black text-xs tracking-[0.2em] uppercase">
@@ -145,12 +145,12 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
               <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
                 {editingId ? 'Editor de Saga' : 'Saga Maestra'}
               </h2>
-              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Atreyu Series Control</p>
+              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Crea automáticamente las versiones para los 7 idiomas ASD</p>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre Global</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga (Base)</label>
                 <input 
                   type="text" 
                   placeholder="Ej: Las Crónicas del Silencio" 
@@ -174,7 +174,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                   onClick={handleSave} 
                   className="flex-[2] py-5 bg-amber-500 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.4em] shadow-2xl shadow-amber-100 hover:bg-amber-600 transition-all active:scale-95"
                 >
-                  {editingId ? 'Actualizar' : 'Lanzamiento'}
+                  {editingId ? 'Actualizar' : 'Generar Lanzamiento Multi-idioma'}
                 </button>
               </div>
             </div>

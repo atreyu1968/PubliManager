@@ -15,6 +15,7 @@ import SalesTracker from './components/SalesTracker';
 import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
 import HistoryView from './components/HistoryView';
+import SettingsView from './components/SettingsView';
 
 export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -43,14 +44,15 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
   const location = useLocation();
   const menuItems = [
     { path: '/', icon: 'fa-chart-line', label: 'Panel' },
-    { path: '/agenda', icon: 'fa-calendar-days', label: 'Agenda 7 Días' },
+    { path: '/agenda', icon: 'fa-calendar-days', label: 'Agenda' },
     { path: '/books', icon: 'fa-book', label: 'Catálogo' },
-    { path: '/history', icon: 'fa-clock-rotate-left', label: 'Historial / Logs' },
-    { path: '/series', icon: 'fa-layer-group', label: 'Sagas / Series' },
-    { path: '/sales', icon: 'fa-money-bill-trend-up', label: 'Ventas y KENPC' },
+    { path: '/history', icon: 'fa-clock-rotate-left', label: 'Historial' },
+    { path: '/series', icon: 'fa-layer-group', label: 'Sagas' },
+    { path: '/sales', icon: 'fa-money-bill-trend-up', label: 'Ventas' },
     { path: '/imprints', icon: 'fa-tags', label: 'Sellos' },
     { path: '/pseudonyms', icon: 'fa-user-pen', label: 'Seudónimos' },
     { path: '/ai-assistant', icon: 'fa-robot', label: 'Asistente IA' },
+    { path: '/settings', icon: 'fa-gears', label: 'Personalización' },
   ];
 
   return (
@@ -60,7 +62,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
           <ASDLogo className="w-10 h-auto" />
           <div className="flex flex-col">
             <span className="text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase leading-none">Atreyu ASD</span>
-            <span className="text-[8px] font-bold text-[#1CB5B1] uppercase mt-1.5">Elite OS v2.5</span>
+            <span className="text-[8px] font-bold text-[#1CB5B1] uppercase mt-1.5">Elite OS v3.0</span>
           </div>
         </div>
       </div>
@@ -98,9 +100,26 @@ const App: React.FC = () => {
   });
   const [data, setData] = useState<AppData>(db.getData());
 
+  useEffect(() => {
+    const applyFavicon = async () => {
+      const fav = await imageStore.get('SYSTEM_BRAND_FAVICON');
+      if (fav) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = fav;
+      }
+    };
+    applyFavicon();
+    window.addEventListener('brand_updated', applyFavicon);
+    return () => window.removeEventListener('brand_updated', applyFavicon);
+  }, []);
+
   const refreshData = () => {
-    const freshData = db.getData();
-    setData(freshData);
+    setData(db.getData());
   };
 
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
@@ -121,6 +140,7 @@ const App: React.FC = () => {
               <Route path="/imprints" element={<ImprintsManager data={data} refreshData={refreshData} />} />
               <Route path="/pseudonyms" element={<PseudonymsManager data={data} refreshData={refreshData} />} />
               <Route path="/ai-assistant" element={<AIAssistant data={data} />} />
+              <Route path="/settings" element={<SettingsView data={data} refreshData={refreshData} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </div>
@@ -135,14 +155,6 @@ const App: React.FC = () => {
               <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em]">
                 Atreyu Servicios Digitales &copy; {new Date().getFullYear()}
               </p>
-              <p className="text-[9px] text-slate-300 font-bold uppercase tracking-[0.4em]">
-                Secure Publishing Infrastructure · Hybrid Edition v2.5
-              </p>
-              <div className="flex justify-center gap-4 text-[10px] text-slate-400 font-black uppercase tracking-widest opacity-50">
-                <span>Indie Ecosystem</span>
-                <span>•</span>
-                <span>AI Core Ready</span>
-              </div>
             </div>
           </footer>
         </main>

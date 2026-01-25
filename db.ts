@@ -1,5 +1,5 @@
 
-import { AppData, Imprint, HistoryRecord } from './types';
+import { AppData, Imprint, HistoryRecord, AppSettings } from './types';
 import { imageStore } from './imageStore';
 
 const STORAGE_KEY = 'publimanager_asd_v3';
@@ -15,6 +15,11 @@ const initialImprints: Imprint[] = [
   { id: '7', name: 'ASD Català', language: 'Catalán' }
 ];
 
+const defaultSettings: AppSettings = {
+  viewMode: 'grid',
+  customActions: ['Traducción en curso', 'Corrección ortotipográfica', 'Diseño de portada', 'Maquetación interior', 'Revisión de galeradas']
+};
+
 const initialData: AppData = {
   imprints: initialImprints,
   pseudonyms: [
@@ -24,7 +29,8 @@ const initialData: AppData = {
   books: [],
   tasks: [],
   sales: [],
-  history: []
+  history: [],
+  settings: defaultSettings
 };
 
 export const db = {
@@ -50,6 +56,9 @@ export const db = {
       if (!parsed.history) {
         parsed.history = [];
       }
+      if (!parsed.settings) {
+        parsed.settings = defaultSettings;
+      }
       return parsed;
     } catch (e) {
       console.error("Error al leer de localStorage", e);
@@ -64,12 +73,11 @@ export const db = {
       return true;
     } catch (e) {
       console.error("Error crítico de persistencia:", e);
-      alert("⚠️ ERROR DE ESPACIO: No se pudo guardar la configuración.");
       return false;
     }
   },
 
-  logAction: (bookId: string, bookTitle: string, action: HistoryRecord['action'], details?: string) => {
+  logAction: (bookId: string, bookTitle: string, action: string, details?: string) => {
     const data = db.getData();
     const newRecord: HistoryRecord = {
       id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
@@ -79,8 +87,7 @@ export const db = {
       timestamp: new Date().toISOString(),
       details
     };
-    data.history.unshift(newRecord); // Añadir al inicio para que el más reciente sea el primero
-    // Limitar historial a los últimos 500 registros para no saturar localStorage
+    data.history.unshift(newRecord);
     if (data.history.length > 500) {
       data.history = data.history.slice(0, 500);
     }
@@ -113,14 +120,7 @@ export const db = {
   exportData: async () => {
     const metadata = db.getData();
     const media = await imageStore.getAll();
-    
-    const fullBackup = {
-      metadata,
-      media,
-      timestamp: new Date().toISOString(),
-      version: '3.0'
-    };
-
+    const fullBackup = { metadata, media, timestamp: new Date().toISOString(), version: '3.0' };
     const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -136,15 +136,8 @@ export const db = {
         try {
           const content = e.target?.result as string;
           const backup = JSON.parse(content);
-          
-          let metadata = backup;
-          let media = {};
-
-          if (backup.metadata && backup.media) {
-            metadata = backup.metadata;
-            media = backup.media;
-          }
-
+          let metadata = backup.metadata || backup;
+          let media = backup.media || {};
           if (metadata.books && metadata.imprints) {
              db.saveData(metadata);
              await imageStore.clear();
@@ -153,11 +146,9 @@ export const db = {
              }
              resolve(true);
           } else {
-            alert("Formato de archivo no válido.");
             resolve(false);
           }
         } catch (err) {
-          alert("Error al leer el archivo.");
           resolve(false);
         }
       };

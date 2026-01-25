@@ -22,14 +22,14 @@ export interface Series {
   id: string;
   name: string;
   description: string;
-  language?: string; // Campo añadido para soporte multi-idioma
+  language?: string;
 }
 
 export interface HistoryRecord {
   id: string;
   bookId: string;
   bookTitle: string;
-  action: 'Creación' | 'Modificación' | 'Eliminación' | 'Cambio de Estado' | 'Publicación';
+  action: string; // Cambiado de unión a string para soportar acciones personalizadas
   timestamp: string;
   details?: string;
 }
@@ -45,7 +45,7 @@ export interface Book {
   description: string;
   shortSummary?: string;
   isbn?: string;
-  asin?: string; // Identificador único de Amazon para importación de ventas
+  asin?: string;
   platforms: Platform[];
   formats: BookFormat[];
   price: number;
@@ -81,6 +81,11 @@ export interface SaleRecord {
   platform: 'KDP' | 'D2D';
 }
 
+export interface AppSettings {
+  viewMode: 'grid' | 'list';
+  customActions: string[];
+}
+
 export interface AppData {
   imprints: Imprint[];
   pseudonyms: Pseudonym[];
@@ -89,4 +94,5 @@ export interface AppData {
   tasks: Task[];
   sales: SaleRecord[];
   history: HistoryRecord[];
+  settings: AppSettings;
 }
