@@ -17,22 +17,18 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
     if (!rawText.trim()) return;
     
     const lines = rawText.trim().split('\n');
-    // Detectamos si es tabulado (Excel) o Comas (CSV)
     const delimiter = rawText.includes('\t') ? '\t' : ',';
     
     const results = lines.map(line => {
       const parts = line.split(delimiter).map(p => p.trim());
-      
-      // Si la línea parece una cabecera, la saltamos (si contiene palabras clave)
       const firstPart = parts[0]?.toLowerCase();
-      if (firstPart === 'título' || firstPart === 'title' || firstPart === 'asin' || firstPart === 'libro') {
+      
+      if (!firstPart || firstPart === 'título' || firstPart === 'title' || firstPart === 'asin' || firstPart === 'libro') {
         return null;
       }
 
-      // Esperamos: [Título] [Mes] [Año] [Unidades] [KENP] [Regalías] [Moneda] [ASIN]
-      if (parts.length < 3) return null; // Línea inválida
+      if (parts.length < 3) return null;
 
-      // REQUERIMIENTO: Ignorar subtítulo después de ":"
       const fullTitle = parts[0] || 'Sin título';
       const cleanTitle = fullTitle.split(':')[0].trim();
 
@@ -61,31 +57,32 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
     let newBooksCount = 0;
     const timestamp = Date.now();
 
-    // Procesamos uno a uno para asegurar que el array de books se actualice antes de la siguiente búsqueda
     for (let i = 0; i < previewData.length; i++) {
       const item = previewData[i];
       
-      // 1. Buscar Libro existente (Priorizar ASIN, luego Título exacto limpio)
+      // Búsqueda insensible a mayúsculas/minúsculas y espacios
       let book = currentData.books.find(b => 
         (item.asin && b.asin === item.asin) || 
         (b.title.trim().toLowerCase() === item.title.trim().toLowerCase())
       );
       
       if (!book) {
-        // CREAR NUEVO LIBRO
-        const bookId = `b-imp-${timestamp}-${i}-${Math.random().toString(36).substr(2, 4)}`;
+        const bookId = `b-imp-${timestamp}-${i}`;
+        
+        // CRITICAL: Asignar idioma y estado para que aparezca en el catálogo
         const newBook: Book = {
           id: bookId,
-          title: item.title, // Ya viene limpio desde processInput
+          title: item.title,
+          language: data.settings.defaultLanguage, // Idioma activo en la configuración
           asin: item.asin?.trim() || '',
           pseudonymId: currentData.pseudonyms[0]?.id || 'p1',
-          imprintId: currentData.imprints[0]?.id || '1',
-          description: 'Importado automáticamente via Amazon Sync (Subtítulos eliminados).',
+          imprintId: currentData.imprints.find(imp => imp.language === data.settings.defaultLanguage)?.id || currentData.imprints[0]?.id || '1',
+          description: 'Importado automáticamente via Amazon Sync.',
           platforms: ['KDP'],
           formats: ['Ebook'],
           price: 0,
           releaseDate: new Date().toISOString(),
-          status: 'Publicado',
+          status: 'Publicado', // Estado para que sea visible por defecto
           kindleUnlimited: item.kenpc > 0,
           kuStrategy: false
         };
@@ -94,20 +91,17 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
         book = newBook;
         newBooksCount++;
         
-        // Logueamos la creación en el historial
         currentData = db.logAction(
           bookId, 
           item.title, 
           'Creación', 
-          'Libro creado automáticamente durante importación masiva (filtro de subtítulo aplicado).', 
+          'Libro creado durante importación (Filtro de visibilidad aplicado).', 
           currentData
         );
       } else if (item.asin && !book.asin) {
-        // Actualizar ASIN si el libro ya existía pero no tenía el código
         book.asin = item.asin.trim();
       }
 
-      // 2. Verificar duplicado de venta
       const isDuplicateSale = currentData.sales.some(s => 
         s.bookId === book?.id && 
         s.month === item.month && 
@@ -136,18 +130,19 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
 
     db.saveData(currentData);
     
+    // Forzamos el refresco inmediato de los datos en la UI
+    refreshData();
+    
     setTimeout(() => {
-      refreshData();
       setIsProcessing(false);
-      alert(`Importación finalizada con éxito:\n\n- Libros nuevos creados: ${newBooksCount}\n- Registros de venta añadidos: ${importedCount}\n- Total filas procesadas: ${previewData.length}\n\nNota: Los subtítulos detectados después de ":" han sido ignorados.`);
+      alert(`Éxito: Se han creado ${newBooksCount} libros nuevos y procesado ${importedCount} registros de ventas. Ahora visibles en el catálogo.`);
       setPreviewData([]);
       setRawText('');
-    }, 500);
+    }, 100);
   };
 
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
-      {/* HEADER ESTANDARIZADO */}
       <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
@@ -155,13 +150,13 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Ingesta de Datos</h1>
-            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Sincronización masiva con limpieza de subtítulos</p>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Sincronización masiva con validación de visibilidad</p>
           </div>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Motor v3.2 Filtro Activo</span>
+             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Motor v3.3 Auto-Visibilidad</span>
           </div>
         </div>
       </div>
@@ -173,7 +168,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
           </h2>
           <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100">
             <p className="text-[10px] text-slate-500 font-medium leading-relaxed">
-              Copia y pega desde Excel o CSV. El sistema ignorará cualquier texto después de ":" en el título.<br/>
+              Los libros nuevos se crearán con el idioma: <span className="font-bold text-indigo-600">{data.settings.defaultLanguage}</span>.<br/>
               Orden de columnas sugerido:<br/>
               <span className="font-bold text-indigo-600">[Título] [Mes] [Año] [Uds] [KENP] [Regalías] [Moneda] [ASIN]</span>
             </p>
@@ -202,7 +197,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
                <table className="w-full text-left">
                   <thead className="sticky top-0 bg-slate-50 border-b border-slate-100">
                     <tr className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                      <th className="px-4 py-3">Título (Limpio) / ASIN</th>
+                      <th className="px-4 py-3">Título / ASIN</th>
                       <th className="px-4 py-3 text-center">Periodo</th>
                       <th className="px-4 py-3 text-right">Regalías</th>
                     </tr>

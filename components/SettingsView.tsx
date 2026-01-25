@@ -97,6 +97,13 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
+  const handleLogoUrl = async (url: string) => {
+    if (url.trim()) {
+      await imageStore.save('SYSTEM_BRAND_LOGO', url.trim());
+      window.dispatchEvent(new Event('brand_updated'));
+    }
+  };
+
   const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -106,6 +113,13 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
         window.dispatchEvent(new Event('brand_updated'));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFaviconUrl = async (url: string) => {
+    if (url.trim()) {
+      await imageStore.save('SYSTEM_BRAND_FAVICON', url.trim());
+      window.dispatchEvent(new Event('brand_updated'));
     }
   };
 
@@ -155,25 +169,43 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Logo del Sistema</label>
-              <div className="aspect-square bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center relative group overflow-hidden shadow-inner">
+              <div className="aspect-square bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center relative group overflow-hidden shadow-inner mb-2">
                 <ASDLogo className="w-24 h-auto" />
                 <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
                    <i className="fa-solid fa-upload text-white mb-1"></i>
-                   <span className="text-[8px] font-black text-white uppercase">Cambiar Logo</span>
+                   <span className="text-[8px] font-black text-white uppercase">Subir Archivo</span>
                 </div>
                 <input type="file" accept="image/*" onChange={handleLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+              <div className="relative">
+                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input 
+                  type="text" 
+                  placeholder="URL del logo..." 
+                  onBlur={(e) => handleLogoUrl(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
               </div>
             </div>
 
             <div className="space-y-4">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Favicon (Pestaña)</label>
-              <div className="aspect-square bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center relative group overflow-hidden shadow-inner">
+              <div className="aspect-square bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center relative group overflow-hidden shadow-inner mb-2">
                 <i className="fa-solid fa-window-maximize text-slate-300 text-3xl"></i>
                 <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center">
                    <i className="fa-solid fa-upload text-white mb-1"></i>
-                   <span className="text-[8px] font-black text-white uppercase">Subir Icono</span>
+                   <span className="text-[8px] font-black text-white uppercase">Subir Archivo</span>
                 </div>
                 <input type="file" accept="image/*" onChange={handleFaviconUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+              </div>
+              <div className="relative">
+                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input 
+                  type="text" 
+                  placeholder="URL del icono..." 
+                  onBlur={(e) => handleFaviconUrl(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
               </div>
             </div>
           </div>

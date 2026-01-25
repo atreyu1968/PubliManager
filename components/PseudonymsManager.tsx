@@ -56,7 +56,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
         db.addItem('pseudonyms', authorToSave);
       }
 
-      if (tempPhoto && tempPhoto.startsWith('data:')) {
+      if (tempPhoto) {
         await imageStore.save(id, tempPhoto);
       }
 
@@ -104,7 +104,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
       </div>
 
-      <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-10 text-left">
         <div className="lg:col-span-3 flex flex-col items-center border-b lg:border-b-0 lg:border-r border-slate-50 pb-10 lg:pb-0 lg:pr-10">
           <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center mb-6 relative group cursor-pointer transition-all hover:border-indigo-400">
             {newAuthor.photoUrl ? (
@@ -114,7 +114,19 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
             )}
             <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retrato Corporativo</span>
+          
+          <div className="w-full space-y-4">
+             <div className="relative">
+                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input 
+                  placeholder="URL del retrato..." 
+                  value={newAuthor.photoUrl?.startsWith('data:') ? '' : newAuthor.photoUrl}
+                  onChange={e => setNewAuthor({...newAuthor, photoUrl: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+             </div>
+             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block text-center">Sube un archivo o pega una URL</span>
+          </div>
         </div>
         
         <div className="lg:col-span-9 space-y-6">
@@ -166,7 +178,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
                 {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-2xl m-6"></i>}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2">{p.name}</h3>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2 text-left">{p.name}</h3>
                 <div className="flex gap-2">
                   {p.driveFolderUrl && (
                     <a href={p.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
@@ -180,7 +192,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
               </div>
             </div>
             
-            <p className="text-[11px] text-slate-500 font-medium line-clamp-3 leading-relaxed italic border-l-2 border-slate-100 pl-4">
+            <p className="text-[11px] text-slate-500 font-medium line-clamp-3 leading-relaxed italic border-l-2 border-slate-100 pl-4 text-left">
               {p.bio || "Sin biografía definida."}
             </p>
 

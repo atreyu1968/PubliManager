@@ -60,7 +60,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         db.addItem('imprints', imprintToSave);
       }
 
-      if (tempLogo && tempLogo.startsWith('data:')) {
+      if (tempLogo) {
         await imageStore.save(id, tempLogo);
       }
 
@@ -103,26 +103,41 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6">
-        <div className="w-20 h-20 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden flex-shrink-0">
-          {formData.logoUrl ? (
-            <img src={formData.logoUrl} className="w-full h-full object-contain p-2" />
-          ) : (
-            <i className="fa-solid fa-upload text-slate-300"></i>
-          )}
-          <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-        </div>
-        
-        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
-          <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
-          <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-600 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-
-        <div className="flex gap-2">
-            <button onClick={handleSave} className="bg-slate-900 text-white px-8 py-3 rounded-xl font-black shadow-lg transition-transform active:scale-95 text-xs uppercase tracking-widest">
-                {editingId ? 'Actualizar' : 'Añadir'}
-            </button>
-            {editingId && <button onClick={resetForm} className="bg-slate-100 text-slate-400 p-3 rounded-xl hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>}
+      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col items-stretch gap-6">
+        <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden flex-shrink-0 group transition-all hover:border-amber-400">
+            {formData.logoUrl ? (
+              <img src={formData.logoUrl} className="w-full h-full object-contain p-2" />
+            ) : (
+              <i className="fa-solid fa-upload text-slate-300"></i>
+            )}
+            <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+          </div>
+          
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
+            <div className="space-y-3">
+              <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
+              {/* URL LOGO INPUT */}
+              <div className="relative">
+                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <input 
+                  placeholder="O pegar URL del logo..." 
+                  value={formData.logoUrl?.startsWith('data:') ? '' : formData.logoUrl}
+                  onChange={e => setFormData({...formData, logoUrl: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500" 
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-600 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
+              <div className="flex gap-2">
+                  <button onClick={handleSave} className="flex-1 bg-slate-900 text-white px-8 py-3 rounded-xl font-black shadow-lg transition-transform active:scale-95 text-xs uppercase tracking-widest">
+                      {editingId ? 'Actualizar' : 'Añadir'}
+                  </button>
+                  {editingId && <button onClick={resetForm} className="bg-slate-100 text-slate-400 p-3 rounded-xl hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

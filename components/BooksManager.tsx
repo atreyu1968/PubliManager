@@ -111,7 +111,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         
         currentData.books[index] = bookToSave;
         
-        if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
+        if (tempCoverUrl) {
            await imageStore.save(editingId, tempCoverUrl);
         }
 
@@ -140,7 +140,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
 
         currentData.books.push(freshBook);
 
-        if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
+        if (tempCoverUrl) {
            await imageStore.save(bookId, tempCoverUrl);
         }
         db.logAction(bookId, freshBook.title, 'Creación', `Nuevo proyecto iniciado para el idioma ${lang}.`);
@@ -369,7 +369,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                 
                 {/* COLUMNA IZQUIERDA (PORTADA Y CONFIG) */}
                 <div className="lg:col-span-4 space-y-8">
-                  <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                  <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
                     <div className="aspect-[3/4] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center relative group transition-all hover:border-indigo-400 max-w-[240px] mx-auto shadow-inner">
                       {newBook.coverUrl ? (
                         <img src={newBook.coverUrl} className="w-full h-full object-cover" />
@@ -378,7 +378,20 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                       )}
                       <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
-                    <p className="text-[8px] font-black text-slate-300 text-center uppercase mt-4 tracking-widest">Dimensiones recomendadas: 1600x2560px</p>
+                    
+                    {/* ENTRADA DE URL DE PORTADA */}
+                    <div className="relative">
+                      <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                      <input 
+                        type="text" 
+                        placeholder="Pegar URL de portada..." 
+                        value={newBook.coverUrl?.startsWith('data:') ? '' : newBook.coverUrl}
+                        onChange={e => setNewBook({...newBook, coverUrl: e.target.value})}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
+                      />
+                    </div>
+                    
+                    <p className="text-[8px] font-black text-slate-300 text-center uppercase tracking-widest">Sube un archivo o pega una URL</p>
                   </div>
 
                   {/* SELECTOR DE FORMATOS EN EDITOR */}
