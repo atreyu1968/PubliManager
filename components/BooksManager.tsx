@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { AppData, Book, BookStatus, Series, Pseudonym, Platform, Imprint } from '../types';
+import { AppData, Book, BookStatus, Series, Pseudonym, Platform, Imprint, BookFormat } from '../types';
 import { db } from '../db';
 import { imageStore } from '../imageStore';
 
@@ -11,6 +11,7 @@ interface Props {
 
 const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', 'Francés', 'Catalán'];
 const STATUS_OPTIONS: BookStatus[] = ['Sin escribir', 'Sin editar', 'Preparado', 'Publicado'];
+const FORMAT_OPTIONS: BookFormat[] = ['Ebook', 'Papel', 'Dura', 'Audio'];
 
 const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +19,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<BookStatus | 'Todos'>('Todos');
   const [langFilter, setLangFilter] = useState<string>(data.settings.defaultLanguage || 'Todos');
+  const [formatFilter, setFormatFilter] = useState<BookFormat | 'Todos'>('Ebook');
   const [authorFilter, setAuthorFilter] = useState<string>('Todos');
   const [imprintFilter, setImprintFilter] = useState<string>('Todos');
   const [covers, setCovers] = useState<Record<string, string>>({});
@@ -63,6 +65,15 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         setNewBook(prev => ({ ...prev, coverUrl: reader.result as string }));
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleFormat = (format: BookFormat) => {
+    const currentFormats = newBook.formats || [];
+    if (currentFormats.includes(format)) {
+      setNewBook({ ...newBook, formats: currentFormats.filter(f => f !== format) });
+    } else {
+      setNewBook({ ...newBook, formats: [...currentFormats, format] });
     }
   };
 
@@ -157,7 +168,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     setLaunchType('master');
     setNewBook({ 
       title: '', pseudonymId: '', seriesId: '', seriesOrder: 1, description: '', platforms: ['KDP'], 
-      status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', asin: '', driveFolderUrl: '', price: 0.99
+      formats: ['Ebook'], status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', asin: '', driveFolderUrl: '', price: 0.99
     });
   };
 
@@ -172,8 +183,8 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     const matchesStatus = statusFilter === 'Todos' || book.status === statusFilter;
     const matchesLang = langFilter === 'Todos' || book.language === langFilter;
     const matchesAuthor = authorFilter === 'Todos' || book.pseudonymId === authorFilter;
-    const matchesImprint = imprintFilter === 'Todos' || book.imprintId === imprintFilter;
-    return matchesSearch && matchesStatus && matchesLang && matchesAuthor && matchesImprint;
+    const matchesFormat = formatFilter === 'Todos' || (book.formats && book.formats.includes(formatFilter as BookFormat));
+    return matchesSearch && matchesStatus && matchesLang && matchesAuthor && matchesFormat;
   }).sort((a, b) => a.title.localeCompare(b.title));
 
   const getStatusStyle = (status: BookStatus) => {
@@ -225,6 +236,10 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
+          <select value={formatFilter} onChange={e => setFormatFilter(e.target.value as any)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase text-indigo-600 outline-none">
+            <option value="Todos">Formato: Todos</option>
+            {FORMAT_OPTIONS.map(f => <option key={f} value={f}>{f}</option>)}
+          </select>
           <select value={langFilter} onChange={e => setLangFilter(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase text-slate-600 outline-none">
             <option value="Todos">Idioma: Todos</option>
             {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -284,6 +299,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     </p>
                   </div>
                 )}
+
+                {/* VISUALIZADOR DE FORMATOS */}
+                <div className="flex items-center gap-3 mt-1 mb-3">
+                  {book.formats?.includes('Ebook') && <span title="Ebook Disponible" className="w-5 h-5 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-md text-[10px]"><i className="fa-solid fa-tablet-screen-button"></i></span>}
+                  {book.formats?.includes('Papel') && <span title="Tapa Blanda Disponible" className="w-5 h-5 flex items-center justify-center bg-blue-50 text-blue-600 rounded-md text-[10px]"><i className="fa-solid fa-book"></i></span>}
+                  {book.formats?.includes('Audio') && <span title="Audiolibro Disponible" className="w-5 h-5 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md text-[10px]"><i className="fa-solid fa-headphones"></i></span>}
+                </div>
                 
                 <div className="flex items-center gap-4 mt-4">
                   {book.price > 0 && (
@@ -359,6 +381,22 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     <p className="text-[8px] font-black text-slate-300 text-center uppercase mt-4 tracking-widest">Dimensiones recomendadas: 1600x2560px</p>
                   </div>
 
+                  {/* SELECTOR DE FORMATOS EN EDITOR */}
+                  <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Formatos Disponibles</label>
+                    <div className="grid grid-cols-2 gap-2">
+                       {FORMAT_OPTIONS.map(f => (
+                         <button 
+                           key={f} 
+                           onClick={() => toggleFormat(f)}
+                           className={`py-3 px-4 rounded-xl text-[10px] font-black uppercase transition-all border ${newBook.formats?.includes(f) ? 'bg-indigo-600 text-white border-indigo-600 shadow-lg' : 'bg-slate-50 text-slate-400 border-slate-100'}`}
+                         >
+                           {f}
+                         </button>
+                       ))}
+                    </div>
+                  </div>
+
                   <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Estado KDP Select / KU</label>
                     <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
@@ -368,15 +406,6 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                         className={`w-12 h-6 rounded-full transition-all relative ${newBook.kindleUnlimited ? 'bg-indigo-600' : 'bg-slate-200'}`}
                       >
                         <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${newBook.kindleUnlimited ? 'left-7' : 'left-1'}`}></div>
-                      </button>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <span className="text-xs font-bold text-slate-700">Estrategia KENP</span>
-                      <button 
-                        onClick={() => setNewBook({...newBook, kuStrategy: !newBook.kuStrategy})}
-                        className={`w-12 h-6 rounded-full transition-all relative ${newBook.kuStrategy ? 'bg-emerald-500' : 'bg-slate-200'}`}
-                      >
-                        <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${newBook.kuStrategy ? 'left-7' : 'left-1'}`}></div>
                       </button>
                     </div>
                   </div>
@@ -441,7 +470,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                         </select>
                     </div>
                     <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Precio (€)</label>
+                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Precio Maestro (€)</label>
                         <input 
                           type="number" step="0.01"
                           value={newBook.price} 
