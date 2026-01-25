@@ -244,6 +244,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
       <div className={isListView ? "space-y-4" : "grid grid-cols-1 xl:grid-cols-2 gap-6"}>
         {filteredBooks.map(book => {
           const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
+          const series = data.series.find(s => s.id === book.seriesId);
           const displayCover = covers[book.id] || book.coverUrl;
           
           return (
@@ -273,9 +274,18 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                 </div>
                 
                 <h3 className="text-lg font-black text-slate-900 truncate pr-10 leading-none mb-1 group-hover:text-indigo-600 transition-colors">{book.title}</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{author?.name || 'Autor desconocido'}</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{author?.name || 'Autor desconocido'}</p>
                 
-                <div className="flex items-center gap-4 mt-6">
+                {series && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <i className="fa-solid fa-layer-group text-[9px] text-amber-500"></i>
+                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
+                      {series.name} #{book.seriesOrder || 1}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex items-center gap-4 mt-4">
                   {book.price > 0 && (
                     <div className="flex items-center gap-1.5">
                        <i className="fa-solid fa-tag text-[10px] text-slate-300"></i>
@@ -319,9 +329,9 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
       {/* MODAL DE EDICIÓN / LANZAMIENTO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 lg:p-10">
-          <div className="bg-white rounded-[3rem] max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn border border-white/10">
+          <div className="bg-white rounded-[3rem] max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-scaleIn border border-white/10">
             
-            <div className="px-10 py-6 border-b border-slate-100 bg-white shrink-0 flex justify-between items-center">
+            <div className="px-10 py-6 border-b border-slate-100 bg-white shrink-0 flex justify-between items-center z-10">
               <div>
                 <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
                   {editingId ? 'Editor de Metadatos' : 'Nuevo Proyecto Editorial'}
@@ -332,7 +342,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
               </button>
             </div>
             
-            <div className="overflow-y-auto p-10 custom-scrollbar bg-slate-50/20">
+            <div className="overflow-y-auto p-10 custom-scrollbar bg-slate-50/20 flex-1">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 
                 {/* COLUMNA IZQUIERDA (PORTADA Y CONFIG) */}
@@ -404,6 +414,25 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Vincular a Saga</label>
+                        <select value={newBook.seriesId} onChange={e => setNewBook({...newBook, seriesId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-bold outline-none cursor-pointer">
+                          <option value="">Sin Saga (Libro único)</option>
+                          {data.series.map(s => <option key={s.id} value={s.id}>{s.name} ({s.language})</option>)}
+                        </select>
+                    </div>
+                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
+                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Orden en la Saga</label>
+                        <input 
+                          type="number" 
+                          value={newBook.seriesOrder} 
+                          onChange={e => setNewBook({...newBook, seriesOrder: parseInt(e.target.value)})} 
+                          className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-bold text-slate-900 outline-none shadow-inner" 
+                        />
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
                         <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Estado Editorial</label>
@@ -462,7 +491,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
               </div>
             </div>
 
-            <div className="px-10 py-6 border-t border-slate-100 bg-white flex flex-col md:flex-row gap-4 items-center">
+            <div className="px-10 py-6 border-t border-slate-100 bg-white flex flex-col md:flex-row gap-4 items-center shrink-0 z-10">
               <button onClick={closeModal} className="w-full md:w-auto px-8 py-4 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase hover:text-slate-900 transition-colors">DESCARTAR</button>
               <div className="flex-1"></div>
               <button onClick={handleSaveBook} className="w-full md:w-auto bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl transition-all active:scale-95 hover:bg-indigo-600">
