@@ -10,6 +10,8 @@ interface Props {
   refreshData: () => void;
 }
 
+const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', 'Francés', 'Catalán'];
+
 const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
   const [newAction, setNewAction] = useState('');
 
@@ -121,11 +123,24 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
           </div>
         </div>
 
-        {/* INTERFAZ Y VISTA */}
+        {/* INTERFAZ Y PREFERENCIAS GLOBALES */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-            <i className="fa-solid fa-display text-indigo-500"></i> Preferencias de Interfaz
+            <i className="fa-solid fa-display text-indigo-500"></i> Preferencias del Sistema
           </h2>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Idioma Predeterminado (Formularios)</label>
+            <select 
+              value={data.settings.defaultLanguage}
+              onChange={(e) => handleUpdateSettings({ defaultLanguage: e.target.value })}
+              className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-black uppercase tracking-widest text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/10"
+            >
+              {LANGUAGES.map(lang => (
+                <option key={lang} value={lang}>{lang}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="space-y-4">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Modo de Visualización (Catálogo)</label>

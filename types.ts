@@ -29,7 +29,7 @@ export interface HistoryRecord {
   id: string;
   bookId: string;
   bookTitle: string;
-  action: string; // Cambiado de unión a string para soportar acciones personalizadas
+  action: string; 
   timestamp: string;
   details?: string;
 }
@@ -84,6 +84,7 @@ export interface SaleRecord {
 export interface AppSettings {
   viewMode: 'grid' | 'list';
   customActions: string[];
+  defaultLanguage: string;
 }
 
 export interface AppData {

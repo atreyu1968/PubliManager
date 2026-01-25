@@ -14,7 +14,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   const [logos, setLogos] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState<Partial<Imprint>>({
     name: '',
-    language: '',
+    language: data.settings.defaultLanguage || '',
     logoUrl: ''
   });
 
@@ -25,6 +25,13 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     };
     loadLogos();
   }, [data.imprints]);
+
+  // Actualizar el idioma del formulario si cambia el ajuste predeterminado
+  useEffect(() => {
+    if (!editingId) {
+      setFormData(prev => ({ ...prev, language: data.settings.defaultLanguage }));
+    }
+  }, [data.settings.defaultLanguage, editingId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -45,7 +52,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
       const imprintToSave = { 
         ...formData, 
         id, 
-        logoUrl: '' // No guardamos la imagen pesada en localStorage
+        logoUrl: '' 
       } as Imprint;
 
       if (editingId) {
@@ -64,19 +71,18 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', language: '', logoUrl: '' });
+    setFormData({ name: '', language: data.settings.defaultLanguage, logoUrl: '' });
     setEditingId(null);
   };
 
   const openEdit = async (imprint: Imprint) => {
     const fullLogo = await imageStore.get(imprint.id);
-    // Priorizamos IndexedDB, pero si es null intentamos el fallback del objeto
     setFormData({ ...imprint, logoUrl: fullLogo || imprint.logoUrl || '' });
     setEditingId(imprint.id);
   };
 
   return (
-    <div className="space-y-8 text-slate-900">
+    <div className="space-y-8 text-slate-900 pb-20">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Sellos Editoriales</h1>
       </div>
@@ -106,7 +112,6 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {data.imprints.map(imprint => {
-          // Lógica de visualización híbrida para evitar "pérdida" de imágenes
           const displayLogo = logos[imprint.id] || imprint.logoUrl;
           
           return (
@@ -117,7 +122,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
-                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
+                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
