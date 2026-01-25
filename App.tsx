@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import { db } from './db';
 import { AppData } from './types';
@@ -16,6 +16,7 @@ import Login from './components/Login';
 import HistoryView from './components/HistoryView';
 import SettingsView from './components/SettingsView';
 import ToolsView from './components/ToolsView';
+import ImportManager from './components/ImportManager';
 
 export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -46,6 +47,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     { path: '/', icon: 'fa-chart-line', label: 'Panel' },
     { path: '/agenda', icon: 'fa-calendar-days', label: 'Agenda' },
     { path: '/books', icon: 'fa-book', label: 'Catálogo' },
+    { path: '/import', icon: 'fa-file-import', label: 'Importar' },
     { path: '/tools', icon: 'fa-toolbox', label: 'Herramientas' },
     { path: '/history', icon: 'fa-clock-rotate-left', label: 'Historial' },
     { path: '/series', icon: 'fa-layer-group', label: 'Sagas' },
@@ -102,7 +104,23 @@ const App: React.FC = () => {
   });
   const [data, setData] = useState<AppData>(db.getData());
 
+  const refreshData = useCallback(() => {
+    setData(db.getData());
+  }, []);
+
   useEffect(() => {
+    // Escuchar cambios de almacenamiento para sincronizar la UI automáticamente
+    const handleStorageUpdate = (e: any) => {
+      if (e.detail) {
+        setData(e.detail);
+      } else {
+        refreshData();
+      }
+    };
+
+    window.addEventListener('storage_updated', handleStorageUpdate);
+    window.addEventListener('storage', refreshData); // Cambios desde otras pestañas
+
     const applyFavicon = async () => {
       const fav = await imageStore.get('SYSTEM_BRAND_FAVICON');
       if (fav) {
@@ -115,14 +133,16 @@ const App: React.FC = () => {
         link.href = fav;
       }
     };
+
     applyFavicon();
     window.addEventListener('brand_updated', applyFavicon);
-    return () => window.removeEventListener('brand_updated', applyFavicon);
-  }, []);
 
-  const refreshData = () => {
-    setData(db.getData());
-  };
+    return () => {
+      window.removeEventListener('storage_updated', handleStorageUpdate);
+      window.removeEventListener('storage', refreshData);
+      window.removeEventListener('brand_updated', applyFavicon);
+    };
+  }, [refreshData]);
 
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
 
@@ -136,6 +156,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
               <Route path="/agenda" element={<AgendaView data={data} refreshData={refreshData} />} />
               <Route path="/books" element={<BooksManager data={data} refreshData={refreshData} />} />
+              <Route path="/import" element={<ImportManager data={data} refreshData={refreshData} />} />
               <Route path="/tools" element={<ToolsView data={data} />} />
               <Route path="/history" element={<HistoryView data={data} />} />
               <Route path="/series" element={<SeriesManager data={data} refreshData={refreshData} />} />

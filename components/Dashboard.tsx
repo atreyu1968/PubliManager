@@ -28,47 +28,44 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
     calculateStorage();
   }, [data]);
 
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (confirm('Esto reemplazará todos los datos e IMÁGENES actuales. ¿Deseas continuar?')) {
-        const success = await db.importData(file);
-        if (success) {
-          refreshData();
-          window.dispatchEvent(new Event('brand_updated'));
-          alert('Sistema restaurado íntegramente.');
-        }
-      }
-    }
-  };
-
   const activeBooks = data.books.filter(b => b.status === 'Publicado').length;
   const totalRevenue = data.sales.reduce((acc, curr) => acc + curr.revenue, 0);
   const totalKenpc = data.sales.reduce((acc, curr) => acc + curr.kenpc, 0);
 
-  const bookRevenue = data.books.map(b => ({
-    title: b.title,
-    rev: data.sales.filter(s => s.bookId === b.id).reduce((acc, curr) => acc + curr.revenue, 0)
-  })).sort((a,b) => b.rev - a.rev)[0];
-
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
-        <div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none">Panel Editorial</h1>
-          <p className="text-slate-600 font-bold text-xs uppercase tracking-widest mt-2">Atreyu ASD Operating System</p>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+            <i className="fa-solid fa-chart-line text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Panel Editorial</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Atreyu ASD Operating System v3.0</p>
+          </div>
         </div>
         
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {data.settings.googleSheetMasterUrl && (
+            <a 
+              href={data.settings.googleSheetMasterUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-emerald-50 text-emerald-600 border border-emerald-100 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 hover:text-white transition-all shadow-md active:scale-95"
+            >
+              <i className="fa-solid fa-file-excel"></i> Hoja Amazon
+            </a>
+          )}
           <Link 
-            to="/settings"
-            className="flex items-center gap-2 bg-[#1CB5B1] text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg active:scale-95"
+            to="/import"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-slate-900 text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-lg active:scale-95"
           >
-            <i className="fa-solid fa-gears"></i> Personalizar Sistema
+            <i className="fa-solid fa-file-import"></i> Importar
           </Link>
           <button 
             onClick={() => db.exportData()}
-            className="flex items-center gap-2 bg-white border border-slate-200 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-md active:scale-95"
+            className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-white border border-slate-200 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-md active:scale-95"
           >
             <i className="fa-solid fa-download"></i> Backup
           </button>
@@ -76,7 +73,6 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* MÓDULO DE IDENTIDAD CORPORATIVA */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-lg shadow-slate-100/50 flex flex-col items-center justify-center text-center">
           <div className="w-24 h-24 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-center overflow-hidden mb-4 shadow-inner">
             <ASDLogo className="w-16 h-16 object-contain" />
@@ -88,7 +84,6 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
           </Link>
         </div>
 
-        {/* STATS RÁPIDOS */}
         <StatCard title="Obras Publicadas" value={activeBooks} subtitle="Total catálogo activo" icon="fa-book-atlas" color="indigo" />
         <StatCard title="Ingresos Totales" value={`${totalRevenue.toFixed(2)}€`} subtitle="Acumulado bruto" icon="fa-sack-dollar" color="emerald" />
         <StatCard title="Páginas KENP" value={totalKenpc.toLocaleString()} subtitle="Lecturas KDP Select" icon="fa-book-open-reader" color="amber" />

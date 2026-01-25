@@ -78,14 +78,30 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
 
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Gestión de Identidades</h1>
-          <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">{editingId ? 'Editando autor seleccionado' : 'Añade una nueva identidad editorial al ecosistema ASD'}</p>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-600 shadow-inner">
+            <i className="fa-solid fa-user-pen text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Gestión de Identidades</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">{editingId ? 'Editando autor seleccionado' : 'Añade una nueva identidad editorial al ecosistema ASD'}</p>
+          </div>
         </div>
-        {editingId && (
-          <button onClick={resetForm} className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors">Cancelar Edición</button>
-        )}
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {editingId && (
+            <button onClick={resetForm} className="bg-slate-100 text-slate-500 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
+              Cancelar Edición
+            </button>
+          )}
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+               {data.pseudonyms.length} Autores Registrados
+             </span>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-10">

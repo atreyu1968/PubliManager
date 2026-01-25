@@ -94,6 +94,7 @@ export interface AppSettings {
   customActions: string[];
   defaultLanguage: string;
   externalLinks: ExternalLink[];
+  googleSheetMasterUrl?: string;
 }
 
 export interface AppData {

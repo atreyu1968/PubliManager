@@ -52,17 +52,15 @@ export const db = {
       }
       
       const parsed = JSON.parse(stored);
-      if (!parsed.imprints || parsed.imprints.length === 0) {
-        parsed.imprints = initialImprints;
-      }
-      if (!parsed.history) {
-        parsed.history = [];
-      }
+      // Validaciones de integridad
+      if (!parsed.imprints || parsed.imprints.length === 0) parsed.imprints = initialImprints;
+      if (!parsed.history) parsed.history = [];
       if (!parsed.settings) {
         parsed.settings = defaultSettings;
       } else {
         if (!parsed.settings.defaultLanguage) parsed.settings.defaultLanguage = 'Español';
         if (!parsed.settings.externalLinks) parsed.settings.externalLinks = [];
+        if (!parsed.settings.customActions) parsed.settings.customActions = defaultSettings.customActions;
       }
       return parsed;
     } catch (e) {
@@ -74,16 +72,18 @@ export const db = {
   saveData: (data: AppData) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      window.dispatchEvent(new Event('storage_updated'));
+      // Notificación global para que todos los componentes se enteren del cambio
+      window.dispatchEvent(new CustomEvent('storage_updated', { detail: data }));
       return true;
     } catch (e) {
       console.error("Error crítico de persistencia:", e);
+      alert("Error de almacenamiento: Es posible que el espacio del navegador esté lleno.");
       return false;
     }
   },
 
-  logAction: (bookId: string, bookTitle: string, action: string, details?: string) => {
-    const data = db.getData();
+  logAction: (bookId: string, bookTitle: string, action: string, details?: string, existingData?: AppData) => {
+    const data = existingData || db.getData();
     const newRecord: HistoryRecord = {
       id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
       bookId,
@@ -96,7 +96,12 @@ export const db = {
     if (data.history.length > 500) {
       data.history = data.history.slice(0, 500);
     }
-    db.saveData(data);
+    // Si no pasamos existingData, guardamos inmediatamente. 
+    // Si pasamos existingData, asumimos que el llamador guardará después (evita race conditions).
+    if (!existingData) {
+      db.saveData(data);
+    }
+    return data;
   },
 
   addItem: <T extends { id: string },>(collection: keyof AppData, item: T) => {
@@ -118,6 +123,7 @@ export const db = {
   deleteItem: (collection: keyof AppData, id: string) => {
     const data = db.getData();
     (data[collection] as any) = (data[collection] as any[]).filter(i => i.id !== id);
+    // Limpieza de IndexedDB asociada
     imageStore.delete(id); 
     return db.saveData(data);
   },

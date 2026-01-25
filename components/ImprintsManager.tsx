@@ -26,7 +26,6 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     loadLogos();
   }, [data.imprints]);
 
-  // Actualizar el idioma del formulario si cambia el ajuste predeterminado
   useEffect(() => {
     if (!editingId) {
       setFormData(prev => ({ ...prev, language: data.settings.defaultLanguage }));
@@ -83,8 +82,25 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
 
   return (
     <div className="space-y-8 text-slate-900 pb-20">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Sellos Editoriales</h1>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shadow-inner">
+            <i className="fa-solid fa-tags text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Sellos Editoriales</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Gestión de marcas y segmentación por idioma</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+               {data.imprints.length} Sellos Activos
+             </span>
+          </div>
+        </div>
       </div>
 
       <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col md:flex-row items-center gap-6">

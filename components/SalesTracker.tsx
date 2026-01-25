@@ -43,14 +43,23 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
 
   return (
     <div className="space-y-8 animate-fadeIn text-slate-900">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Registro de Operaciones</h1>
-          <p className="text-sm text-slate-500 font-medium">Control unificado de ingresos KDP y Draft2Digital.</p>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shadow-inner">
+            <i className="fa-solid fa-money-bill-trend-up text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Ventas y Regalías</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Control consolidado KDP y Draft2Digital</p>
+          </div>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="bg-emerald-600 text-white px-6 py-3 rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-100 flex items-center gap-2 transition-all active:scale-95 font-black text-xs tracking-widest uppercase">
-          <i className="fa-solid fa-file-import"></i> Registrar Mes
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3.5 rounded-2xl hover:bg-emerald-700 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.2em] uppercase">
+            <i className="fa-solid fa-file-import mr-2"></i> Nuevo Reporte
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

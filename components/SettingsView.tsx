@@ -12,9 +12,27 @@ interface Props {
 
 const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', 'Francés', 'Catalán'];
 
+const ICON_OPTIONS = [
+  { value: 'fa-link', label: 'Enlace Genérico' },
+  { value: 'fa-brands fa-amazon', label: 'Amazon / KDP' },
+  { value: 'fa-robot', label: 'Inteligencia Artificial' },
+  { value: 'fa-palette', label: 'Diseño / Canva' },
+  { value: 'fa-google-drive', label: 'Google Drive' },
+  { value: 'fa-chart-pie', label: 'Analíticas / Ventas' },
+  { value: 'fa-envelope', label: 'Newsletter / Correo' },
+  { value: 'fa-book-open', label: 'Lectura / Kindle' },
+  { value: 'fa-code', label: 'Desarrollo / Tech' },
+  { value: 'fa-microchip', label: 'Sistema / OS' }
+];
+
 const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
   const [newAction, setNewAction] = useState('');
-  const [newLink, setNewLink] = useState<Partial<ExternalLink>>({ name: '', url: '', icon: 'fa-link' });
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
+  const [newLink, setNewLink] = useState<Partial<ExternalLink>>({ 
+    name: '', 
+    url: '', 
+    icon: 'fa-link' 
+  });
 
   const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {
     const updatedData = {
@@ -25,25 +43,48 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
     refreshData();
   };
 
-  const addExternalLink = () => {
+  const saveExternalLink = () => {
     if (newLink.name && newLink.url) {
-      const link: ExternalLink = {
-        id: `link-${Date.now()}`,
-        name: newLink.name,
-        url: newLink.url,
-        icon: newLink.icon || 'fa-link'
-      };
-      handleUpdateSettings({
-        externalLinks: [...data.settings.externalLinks, link]
-      });
-      setNewLink({ name: '', url: '', icon: 'fa-link' });
+      let updatedLinks;
+      
+      if (editingLinkId) {
+        // Modo Edición
+        updatedLinks = data.settings.externalLinks.map(l => 
+          l.id === editingLinkId ? { ...l, ...newLink } as ExternalLink : l
+        );
+      } else {
+        // Modo Creación
+        const link: ExternalLink = {
+          id: `link-${Date.now()}`,
+          name: newLink.name,
+          url: newLink.url,
+          icon: newLink.icon || 'fa-link'
+        };
+        updatedLinks = [...data.settings.externalLinks, link];
+      }
+
+      handleUpdateSettings({ externalLinks: updatedLinks });
+      cancelEditLink();
     }
   };
 
+  const startEditLink = (link: ExternalLink) => {
+    setEditingLinkId(link.id);
+    setNewLink({ name: link.name, url: link.url, icon: link.icon });
+  };
+
+  const cancelEditLink = () => {
+    setEditingLinkId(null);
+    setNewLink({ name: '', url: '', icon: 'fa-link' });
+  };
+
   const removeExternalLink = (id: string) => {
-    handleUpdateSettings({
-      externalLinks: data.settings.externalLinks.filter(l => l.id !== id)
-    });
+    if (confirm('¿Eliminar este acceso directo?')) {
+      handleUpdateSettings({
+        externalLinks: data.settings.externalLinks.filter(l => l.id !== id)
+      });
+      if (editingLinkId === id) cancelEditLink();
+    }
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -145,14 +186,31 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
           </div>
         </div>
 
-        {/* INTERFAZ Y PREFERENCIAS GLOBALES */}
+        {/* INTEGRACIONES MAESTRAS */}
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-            <i className="fa-solid fa-display text-indigo-500"></i> Preferencias del Sistema
+            <i className="fa-solid fa-cloud-bolt text-indigo-500"></i> Integraciones Maestras
           </h2>
 
           <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Idioma Predeterminado (Formularios)</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Google Sheet Maestra (Amazon KDP)</label>
+            <div className="relative">
+               <i className="fa-solid fa-file-excel absolute left-5 top-1/2 -translate-y-1/2 text-emerald-500"></i>
+               <input 
+                type="text"
+                placeholder="https://docs.google.com/spreadsheets/d/..." 
+                value={data.settings.googleSheetMasterUrl || ''}
+                onChange={(e) => handleUpdateSettings({ googleSheetMasterUrl: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-14 pr-6 py-4 text-xs font-bold text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500/10"
+              />
+            </div>
+            <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider ml-1">
+              Este enlace habilitará un botón de acceso rápido en el panel principal.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Idioma Predeterminado</label>
             <select 
               value={data.settings.defaultLanguage}
               onChange={(e) => handleUpdateSettings({ defaultLanguage: e.target.value })}
@@ -163,43 +221,29 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
               ))}
             </select>
           </div>
-
-          <div className="space-y-4">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Modo de Visualización (Catálogo)</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button 
-                onClick={() => handleUpdateSettings({ viewMode: 'grid' })}
-                className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 ${data.settings.viewMode === 'grid' ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'}`}
-              >
-                <i className={`fa-solid fa-table-cells-large text-2xl ${data.settings.viewMode === 'grid' ? 'text-indigo-600' : 'text-slate-300'}`}></i>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${data.settings.viewMode === 'grid' ? 'text-indigo-600' : 'text-slate-400'}`}>Modo Rejilla</span>
-              </button>
-              <button 
-                onClick={() => handleUpdateSettings({ viewMode: 'list' })}
-                className={`p-6 rounded-[2rem] border-2 transition-all flex flex-col items-center gap-3 ${data.settings.viewMode === 'list' ? 'border-indigo-500 bg-indigo-50/30' : 'border-slate-100 hover:border-slate-200 bg-slate-50/50'}`}
-              >
-                <i className={`fa-solid fa-list-ul text-2xl ${data.settings.viewMode === 'list' ? 'text-indigo-600' : 'text-slate-300'}`}></i>
-                <span className={`text-[10px] font-black uppercase tracking-widest ${data.settings.viewMode === 'list' ? 'text-indigo-600' : 'text-slate-400'}`}>Modo Lista</span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* HERRAMIENTAS EXTERNAS */}
         <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
           <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
-            <i className="fa-solid fa-toolbox text-indigo-500"></i> Herramientas Externas (Enlaces)
+            <i className="fa-solid fa-toolbox text-indigo-500"></i> {editingLinkId ? 'Editando Herramienta' : 'Herramientas Externas (Enlaces)'}
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">
-                Configura accesos directos a plataformas externas como Canva, Amazon KDP, o generadores de IA.
-              </p>
+              <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 flex items-center gap-4 mb-2">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-100">
+                  <i className={`fa-solid ${newLink.icon}`}></i>
+                </div>
+                <div>
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Icono Seleccionado</p>
+                  <p className="text-[10px] font-bold text-slate-900 uppercase">Vista Previa</p>
+                </div>
+              </div>
               <div className="space-y-3">
                 <input 
                   type="text" 
-                  placeholder="Nombre de la herramienta" 
+                  placeholder="Nombre de la herramienta (Ej: Canva)" 
                   value={newLink.name}
                   onChange={(e) => setNewLink({...newLink, name: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
@@ -216,41 +260,59 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
                   onChange={(e) => setNewLink({...newLink, icon: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
                 >
-                  <option value="fa-link">Icono: Link</option>
-                  <option value="fa-brands fa-amazon">Icono: Amazon</option>
-                  <option value="fa-palette">Icono: Diseño</option>
-                  <option value="fa-robot">Icono: IA</option>
-                  <option value="fa-chart-pie">Icono: Analytics</option>
-                  <option value="fa-google-drive">Icono: Drive</option>
+                  {ICON_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
                 </select>
-                <button 
-                  onClick={addExternalLink}
-                  className="w-full bg-slate-900 text-white px-6 py-4 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-colors"
-                >
-                  Registrar Herramienta
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={saveExternalLink}
+                    className="flex-1 bg-slate-900 text-white px-6 py-4 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-200"
+                  >
+                    {editingLinkId ? 'Guardar Cambios' : 'Registrar Herramienta'}
+                  </button>
+                  {editingLinkId && (
+                    <button 
+                      onClick={cancelEditLink}
+                      className="bg-slate-100 text-slate-500 px-6 py-4 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start content-start">
+            <div className="grid grid-cols-1 gap-2 items-start content-start">
                {data.settings.externalLinks.map(link => (
-                 <div key={link.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group">
-                   <div className="flex items-center gap-3 overflow-hidden">
-                      <i className={`fa-solid ${link.icon} text-indigo-500`}></i>
+                 <div key={link.id} className={`p-4 rounded-2xl flex items-center justify-between group border transition-all ${editingLinkId === link.id ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100'}`}>
+                   <div className="flex items-center gap-4 overflow-hidden">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${editingLinkId === link.id ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-500 border border-slate-100'}`}>
+                        <i className={`fa-solid ${link.icon}`}></i>
+                      </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-800 uppercase truncate">{link.name}</p>
+                        <p className="text-[8px] text-slate-400 font-bold truncate">{link.url.replace(/^https?:\/\//, '')}</p>
                       </div>
                    </div>
-                   <button 
-                    onClick={() => removeExternalLink(link.id)}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                   >
-                     <i className="fa-solid fa-trash-can text-[10px]"></i>
-                   </button>
+                   <div className="flex gap-1">
+                     <button 
+                      onClick={() => startEditLink(link)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                     >
+                       <i className="fa-solid fa-pen text-[10px]"></i>
+                     </button>
+                     <button 
+                      onClick={() => removeExternalLink(link.id)}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+                     >
+                       <i className="fa-solid fa-trash-can text-[10px]"></i>
+                     </button>
+                   </div>
                  </div>
                ))}
                {data.settings.externalLinks.length === 0 && (
-                 <p className="text-[10px] font-black text-slate-300 uppercase italic col-span-2 text-center py-10">No hay herramientas configuradas</p>
+                 <p className="text-[10px] font-black text-slate-300 uppercase italic py-10 text-center">No hay herramientas configuradas</p>
                )}
             </div>
           </div>
