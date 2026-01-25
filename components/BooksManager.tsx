@@ -21,7 +21,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
   const [langFilter, setLangFilter] = useState<string>(data.settings.defaultLanguage || 'Todos');
   const [formatFilter, setFormatFilter] = useState<BookFormat | 'Todos'>('Ebook');
   const [authorFilter, setAuthorFilter] = useState<string>('Todos');
-  const [imprintFilter, setImprintFilter] = useState<string>('Todos');
+  const [urlFilter, setUrlFilter] = useState<'Todos' | 'Con Landing' | 'Sin Landing'>('Todos');
   const [covers, setCovers] = useState<Record<string, string>>({});
   
   const [launchType, setLaunchType] = useState<'master' | 'single'>('master');
@@ -45,6 +45,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     kuStrategy: false,
     amazonLink: '',
     d2dLink: '',
+    landingUrl: '',
     asin: '',
     driveFolderUrl: ''
   });
@@ -168,7 +169,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     setLaunchType('master');
     setNewBook({ 
       title: '', pseudonymId: '', seriesId: '', seriesOrder: 1, description: '', platforms: ['KDP'], 
-      formats: ['Ebook'], status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', asin: '', driveFolderUrl: '', price: 0.99
+      formats: ['Ebook'], status: 'Sin escribir', kindleUnlimited: false, scheduledDate: '', amazonLink: '', d2dLink: '', landingUrl: '', asin: '', driveFolderUrl: '', price: 0.99
     });
   };
 
@@ -184,7 +185,12 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     const matchesLang = langFilter === 'Todos' || book.language === langFilter;
     const matchesAuthor = authorFilter === 'Todos' || book.pseudonymId === authorFilter;
     const matchesFormat = formatFilter === 'Todos' || (book.formats && book.formats.includes(formatFilter as BookFormat));
-    return matchesSearch && matchesStatus && matchesLang && matchesAuthor && matchesFormat;
+    
+    // Filtro de Landing Privada (URL específica de landing)
+    const hasLanding = !!book.landingUrl;
+    const matchesUrl = urlFilter === 'Todos' || (urlFilter === 'Con Landing' ? hasLanding : !hasLanding);
+
+    return matchesSearch && matchesStatus && matchesLang && matchesAuthor && matchesFormat && matchesUrl;
   }).sort((a, b) => a.title.localeCompare(b.title));
 
   const getStatusStyle = (status: BookStatus) => {
@@ -210,7 +216,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Catálogo Maestro</h1>
             <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">
-              Control de obras, metadatos y distribución global
+              Control de obras y Landings Privadas ASD
             </p>
           </div>
         </div>
@@ -252,12 +258,17 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
             <option value="Todos">Autor: Todos</option>
             {data.pseudonyms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <select value={urlFilter} onChange={(e) => setUrlFilter(e.target.value as any)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-[10px] font-black uppercase text-emerald-600 outline-none">
+            <option value="Todos">Landing Privada: Todos</option>
+            <option value="Con Landing">Con Landing</option>
+            <option value="Sin Landing">Sin Landing</option>
+          </select>
         </div>
       </div>
 
       {/* LISTADO DINÁMICO */}
       <div className={isListView ? "space-y-4" : "grid grid-cols-1 xl:grid-cols-2 gap-6"}>
-        {filteredBooks.map(book => {
+        {filteredBooks.length > 0 ? filteredBooks.map(book => {
           const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
           const series = data.series.find(s => s.id === book.seriesId);
           const displayCover = covers[book.id] || book.coverUrl;
@@ -321,9 +332,9 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                         <i className="fa-brands fa-amazon text-[10px]"></i>
                       </a>
                     )}
-                    {book.d2dLink && (
-                      <a href={book.d2dLink} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-blue-50 text-blue-500 flex items-center justify-center hover:bg-blue-500 hover:text-white transition-all">
-                        <i className="fa-solid fa-link text-[10px]"></i>
+                    {book.landingUrl && (
+                      <a href={book.landingUrl} target="_blank" rel="noopener noreferrer" title="Landing Privada" className="w-8 h-8 rounded-lg bg-indigo-900 text-white flex items-center justify-center hover:bg-[#1CB5B1] transition-all">
+                        <i className="fa-solid fa-globe text-[10px]"></i>
                       </a>
                     )}
                     {book.driveFolderUrl && (
@@ -344,8 +355,12 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                 </button>
               </div>
             </div>
-          );
-        })}
+          ) : (
+            <div className="col-span-full py-20 text-center opacity-30">
+               <i className="fa-solid fa-filter-circle-xmark text-4xl mb-4 text-slate-300"></i>
+               <p className="text-xs font-black uppercase tracking-widest">No hay libros que coincidan con los filtros</p>
+            </div>
+          ))}
       </div>
 
       {/* MODAL DE EDICIÓN / LANZAMIENTO */}
@@ -379,22 +394,18 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                       <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                     </div>
                     
-                    {/* ENTRADA DE URL DE PORTADA */}
                     <div className="relative">
                       <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                       <input 
                         type="text" 
-                        placeholder="Pegar URL de portada..." 
+                        placeholder="URL de portada..." 
                         value={newBook.coverUrl?.startsWith('data:') ? '' : newBook.coverUrl}
                         onChange={e => setNewBook({...newBook, coverUrl: e.target.value})}
                         className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500/20"
                       />
                     </div>
-                    
-                    <p className="text-[8px] font-black text-slate-300 text-center uppercase tracking-widest">Sube un archivo o pega una URL</p>
                   </div>
 
-                  {/* SELECTOR DE FORMATOS EN EDITOR */}
                   <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Formatos Disponibles</label>
                     <div className="grid grid-cols-2 gap-2">
@@ -456,25 +467,6 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Vincular a Saga</label>
-                        <select value={newBook.seriesId} onChange={e => setNewBook({...newBook, seriesId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-bold outline-none cursor-pointer">
-                          <option value="">Sin Saga (Libro único)</option>
-                          {data.series.map(s => <option key={s.id} value={s.id}>{s.name} ({s.language})</option>)}
-                        </select>
-                    </div>
-                    <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
-                        <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Orden en la Saga</label>
-                        <input 
-                          type="number" 
-                          value={newBook.seriesOrder} 
-                          onChange={e => setNewBook({...newBook, seriesOrder: parseInt(e.target.value)})} 
-                          className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-xs font-bold text-slate-900 outline-none shadow-inner" 
-                        />
-                    </div>
-                  </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm">
                         <label className="text-[10px] font-black text-slate-400 uppercase mb-3 block ml-1">Estado Editorial</label>
@@ -503,15 +495,15 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                   </div>
 
                   <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Enlaces de Distribución</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Enlaces y Landing Privada</label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="relative">
                         <i className="fa-brands fa-amazon absolute left-4 top-1/2 -translate-y-1/2 text-orange-400"></i>
                         <input placeholder="URL Amazon KDP" value={newBook.amazonLink} onChange={e => setNewBook({...newBook, amazonLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-4 text-[10px] font-bold outline-none" />
                       </div>
                       <div className="relative">
-                        <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-blue-400"></i>
-                        <input placeholder="URL Draft2Digital" value={newBook.d2dLink} onChange={e => setNewBook({...newBook, d2dLink: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-4 text-[10px] font-bold outline-none" />
+                        <i className="fa-solid fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-indigo-500"></i>
+                        <input placeholder="URL Landing Privada (Propia)" value={newBook.landingUrl} onChange={e => setNewBook({...newBook, landingUrl: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-12 pr-4 py-4 text-[10px] font-bold outline-none" />
                       </div>
                     </div>
                     <div className="relative">
@@ -537,7 +529,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
               <button onClick={closeModal} className="w-full md:w-auto px-8 py-4 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase hover:text-slate-900 transition-colors">DESCARTAR</button>
               <div className="flex-1"></div>
               <button onClick={handleSaveBook} className="w-full md:w-auto bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl transition-all active:scale-95 hover:bg-indigo-600">
-                {editingId ? 'GUARDAR CAMBIOS' : `CREAR ${launchType === 'master' ? 'LANZAMIENTO MAESTRO' : 'LANZAMIENTO ÚNICO'}`}
+                {editingId ? 'GUARDAR CAMBIOS' : `CREAR PROYECTO`}
               </button>
             </div>
           </div>

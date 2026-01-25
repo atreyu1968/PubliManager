@@ -8,6 +8,7 @@ export interface ExternalLink {
   name: string;
   url: string;
   icon?: string;
+  logoUrl?: string;
 }
 
 export interface Imprint {
@@ -15,6 +16,7 @@ export interface Imprint {
   name: string;
   language: string;
   logoUrl?: string; 
+  landingUrl?: string;
 }
 
 export interface Pseudonym {
@@ -24,6 +26,7 @@ export interface Pseudonym {
   photoUrl?: string;
   standardAcknowledgments?: string;
   driveFolderUrl?: string;
+  landingUrl?: string;
 }
 
 export interface Series {
@@ -63,6 +66,7 @@ export interface Book {
   coverUrl?: string;
   amazonLink?: string;
   d2dLink?: string;
+  landingUrl?: string;
   driveFolderUrl?: string;
   kindleUnlimited: boolean;
   kuStrategy: boolean;

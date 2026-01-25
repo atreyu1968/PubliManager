@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AppData, Pseudonym } from '../types';
 import { db } from '../db';
 import { imageStore } from '../imageStore';
@@ -12,12 +12,14 @@ interface Props {
 const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<Record<string, string>>({});
+  const [authorFilter, setAuthorFilter] = useState<'Todos' | 'Con Landing' | 'Sin Landing'>('Todos');
   const [newAuthor, setNewAuthor] = useState<Partial<Pseudonym>>({
     name: '',
     bio: '',
     photoUrl: '',
     standardAcknowledgments: '',
-    driveFolderUrl: ''
+    driveFolderUrl: '',
+    landingUrl: ''
   });
 
   useEffect(() => {
@@ -56,7 +58,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
         db.addItem('pseudonyms', authorToSave);
       }
 
-      if (tempPhoto) {
+      if (tempPhoto && tempPhoto.startsWith('data:')) {
         await imageStore.save(id, tempPhoto);
       }
 
@@ -72,9 +74,19 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
   };
 
   const resetForm = () => {
-    setNewAuthor({ name: '', bio: '', photoUrl: '', standardAcknowledgments: '', driveFolderUrl: '' });
+    setNewAuthor({ name: '', bio: '', photoUrl: '', standardAcknowledgments: '', driveFolderUrl: '', landingUrl: '' });
     setEditingId(null);
   };
+
+  const filteredAuthors = useMemo(() => {
+    return data.pseudonyms.filter(p => {
+      // Filtrar específicamente por la existencia de la landing URL privada
+      const hasLanding = !!p.landingUrl;
+      if (authorFilter === 'Con Landing') return hasLanding;
+      if (authorFilter === 'Sin Landing') return !hasLanding;
+      return true;
+    });
+  }, [data.pseudonyms, authorFilter]);
 
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
@@ -86,20 +98,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Gestión de Identidades</h1>
-            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">{editingId ? 'Editando autor seleccionado' : 'Añade una nueva identidad editorial al ecosistema ASD'}</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {editingId && (
-            <button onClick={resetForm} className="bg-slate-100 text-slate-500 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
-              Cancelar Edición
-            </button>
-          )}
-          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-               {data.pseudonyms.length} Autores Registrados
-             </span>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Configuración de autores y sus Landings Privadas</p>
           </div>
         </div>
       </div>
@@ -113,19 +112,6 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
               <i className="fa-solid fa-camera text-slate-200 text-4xl"></i>
             )}
             <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
-          </div>
-          
-          <div className="w-full space-y-4">
-             <div className="relative">
-                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
-                <input 
-                  placeholder="URL del retrato..." 
-                  value={newAuthor.photoUrl?.startsWith('data:') ? '' : newAuthor.photoUrl}
-                  onChange={e => setNewAuthor({...newAuthor, photoUrl: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-[10px] font-bold outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-             </div>
-             <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block text-center">Sube un archivo o pega una URL</span>
           </div>
         </div>
         
@@ -141,13 +127,13 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Carpeta Google Drive (Producción)</label>
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Landing Privada del Autor</label>
               <div className="relative">
-                 <i className="fa-brands fa-google-drive absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                 <i className="fa-solid fa-globe absolute left-5 top-1/2 -translate-y-1/2 text-indigo-500"></i>
                  <input 
-                  placeholder="https://drive.google.com/..." 
-                  value={newAuthor.driveFolderUrl} 
-                  onChange={e => setNewAuthor({...newAuthor, driveFolderUrl: e.target.value})}
+                  placeholder="https://nombreautor.com/landing-privada" 
+                  value={newAuthor.landingUrl} 
+                  onChange={e => setNewAuthor({...newAuthor, landingUrl: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-600 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-inner text-xs"
                 />
               </div>
@@ -157,10 +143,10 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
           <div className="space-y-2">
             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Perfil Biográfico</label>
             <textarea 
-              placeholder="Escribe aquí la biografía comercial que se usará en Amazon y otros canales..." 
+              placeholder="Biografía comercial..." 
               value={newAuthor.bio} 
               onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
-              className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 h-32 text-xs font-bold text-slate-600 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-inner resize-none leading-relaxed"
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 h-32 text-xs font-bold text-slate-600 focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-inner resize-none leading-relaxed"
             />
           </div>
 
@@ -170,8 +156,27 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
       </div>
 
+      {/* FILTROS DE IDENTIDADES */}
+      <div className="flex items-center gap-4 bg-white p-5 rounded-3xl border border-slate-100 shadow-sm">
+         <div className="flex items-center gap-2">
+           <i className="fa-solid fa-filter text-slate-300 text-xs"></i>
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Estado Landing Privada:</span>
+         </div>
+         <div className="flex gap-2">
+           {['Todos', 'Con Landing', 'Sin Landing'].map(f => (
+             <button 
+               key={f}
+               onClick={() => setAuthorFilter(f as any)}
+               className={`px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${authorFilter === f ? 'bg-indigo-600 text-white shadow-xl' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}
+             >
+               {f}
+             </button>
+           ))}
+         </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {data.pseudonyms.map(p => (
+        {filteredAuthors.map(p => (
           <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6 relative group hover:shadow-2xl transition-all">
             <div className="flex items-center gap-5">
               <div className="w-20 h-20 rounded-3xl bg-slate-50 overflow-hidden border border-slate-100 shadow-inner flex-shrink-0">
@@ -180,9 +185,9 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
               <div className="flex-1 min-w-0">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2 text-left">{p.name}</h3>
                 <div className="flex gap-2">
-                  {p.driveFolderUrl && (
-                    <a href={p.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
-                      <i className="fa-brands fa-google-drive mr-1"></i> Drive
+                  {p.landingUrl && (
+                    <a href={p.landingUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-900 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-[#1CB5B1] transition-all">
+                      <i className="fa-solid fa-globe mr-1"></i> Landing
                     </a>
                   )}
                   <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest">

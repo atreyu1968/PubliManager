@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AppData, Imprint } from '../types';
 import { db } from '../db';
 import { imageStore } from '../imageStore';
@@ -12,10 +12,13 @@ interface Props {
 const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [logos, setLogos] = useState<Record<string, string>>({});
+  const [logoFilter, setLogoFilter] = useState<'Todos' | 'Con Logo' | 'Sin Logo'>('Todos');
+  const [landingFilter, setLandingFilter] = useState<'Todos' | 'Con Landing' | 'Sin Landing'>('Todos');
   const [formData, setFormData] = useState<Partial<Imprint>>({
     name: '',
     language: data.settings.defaultLanguage || '',
-    logoUrl: ''
+    logoUrl: '',
+    landingUrl: ''
   });
 
   useEffect(() => {
@@ -25,12 +28,6 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     };
     loadLogos();
   }, [data.imprints]);
-
-  useEffect(() => {
-    if (!editingId) {
-      setFormData(prev => ({ ...prev, language: data.settings.defaultLanguage }));
-    }
-  }, [data.settings.defaultLanguage, editingId]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -60,7 +57,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         db.addItem('imprints', imprintToSave);
       }
 
-      if (tempLogo) {
+      if (tempLogo && tempLogo.startsWith('data:')) {
         await imageStore.save(id, tempLogo);
       }
 
@@ -70,7 +67,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
   };
 
   const resetForm = () => {
-    setFormData({ name: '', language: data.settings.defaultLanguage, logoUrl: '' });
+    setFormData({ name: '', language: data.settings.defaultLanguage, logoUrl: '', landingUrl: '' });
     setEditingId(null);
   };
 
@@ -79,6 +76,18 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
     setFormData({ ...imprint, logoUrl: fullLogo || imprint.logoUrl || '' });
     setEditingId(imprint.id);
   };
+
+  const filteredImprints = useMemo(() => {
+    return data.imprints.filter(imprint => {
+      const hasLogo = !!(logos[imprint.id] || imprint.logoUrl);
+      const hasLanding = !!imprint.landingUrl;
+      
+      const matchesLogo = logoFilter === 'Todos' || (logoFilter === 'Con Logo' ? hasLogo : !hasLogo);
+      const matchesLanding = landingFilter === 'Todos' || (landingFilter === 'Con Landing' ? hasLanding : !hasLanding);
+      
+      return matchesLogo && matchesLanding;
+    });
+  }, [data.imprints, logos, logoFilter, landingFilter]);
 
   return (
     <div className="space-y-8 text-slate-900 pb-20">
@@ -90,15 +99,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Sellos Editoriales</h1>
-            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Gestión de marcas y segmentación por idioma</p>
-          </div>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-               {data.imprints.length} Sellos Activos
-             </span>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Branding y Landings Privadas por Sello</p>
           </div>
         </div>
       </div>
@@ -116,23 +117,22 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
           
           <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-full">
             <div className="space-y-3">
-              <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
-              {/* URL LOGO INPUT */}
+              <input placeholder="Nombre del sello" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 font-bold text-slate-900 outline-none focus:ring-2 focus:ring-indigo-500" />
               <div className="relative">
-                <i className="fa-solid fa-link absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
+                <i className="fa-solid fa-globe absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 text-xs"></i>
                 <input 
-                  placeholder="O pegar URL del logo..." 
-                  value={formData.logoUrl?.startsWith('data:') ? '' : formData.logoUrl}
-                  onChange={e => setFormData({...formData, logoUrl: e.target.value})}
+                  placeholder="URL Landing Privada del Sello..." 
+                  value={formData.landingUrl}
+                  onChange={e => setFormData({...formData, landingUrl: e.target.value})}
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl pl-10 pr-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500" 
                 />
               </div>
             </div>
             <div className="flex flex-col gap-3">
-              <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-600 placeholder:text-slate-300 outline-none focus:ring-2 focus:ring-indigo-500" />
+              <input placeholder="Idioma" value={formData.language} onChange={e => setFormData({...formData, language: e.target.value})} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-slate-600 outline-none" />
               <div className="flex gap-2">
                   <button onClick={handleSave} className="flex-1 bg-slate-900 text-white px-8 py-3 rounded-xl font-black shadow-lg transition-transform active:scale-95 text-xs uppercase tracking-widest">
-                      {editingId ? 'Actualizar' : 'Añadir'}
+                      {editingId ? 'Actualizar' : 'Añadir Sello'}
                   </button>
                   {editingId && <button onClick={resetForm} className="bg-slate-100 text-slate-400 p-3 rounded-xl hover:text-red-500"><i className="fa-solid fa-xmark"></i></button>}
               </div>
@@ -141,10 +141,41 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         </div>
       </div>
 
+      {/* BARRA DE FILTROS */}
+      <div className="flex flex-wrap items-center gap-6 bg-white/50 p-5 rounded-3xl border border-slate-100">
+         <div className="flex items-center gap-3">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtrar Logo:</span>
+           <div className="flex gap-2">
+             {['Todos', 'Con Logo', 'Sin Logo'].map(f => (
+               <button 
+                 key={f}
+                 onClick={() => setLogoFilter(f as any)}
+                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${logoFilter === f ? 'bg-amber-500 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+               >
+                 {f}
+               </button>
+             ))}
+           </div>
+         </div>
+         <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Filtrar Landing:</span>
+           <div className="flex gap-2">
+             {['Todos', 'Con Landing', 'Sin Landing'].map(f => (
+               <button 
+                 key={f}
+                 onClick={() => setLandingFilter(f as any)}
+                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${landingFilter === f ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+               >
+                 {f}
+               </button>
+             ))}
+           </div>
+         </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {data.imprints.map(imprint => {
+        {filteredImprints.map(imprint => {
           const displayLogo = logos[imprint.id] || imprint.logoUrl;
-          
           return (
             <div key={imprint.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
               <div className="flex items-center gap-4">
@@ -153,7 +184,12 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
                 </div>
                 <div>
                   <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
-                  <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest mt-1">{imprint.language}</p>
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">{imprint.language}</span>
+                    {imprint.landingUrl && (
+                      <a href={imprint.landingUrl} target="_blank" className="text-indigo-500 hover:text-indigo-700"><i className="fa-solid fa-globe text-[10px]"></i></a>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">

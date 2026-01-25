@@ -26,12 +26,12 @@ const ICON_OPTIONS = [
 ];
 
 const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
-  const [newAction, setNewAction] = useState('');
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null);
   const [newLink, setNewLink] = useState<Partial<ExternalLink>>({ 
     name: '', 
     url: '', 
-    icon: 'fa-link' 
+    icon: 'fa-link',
+    logoUrl: ''
   });
 
   const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {
@@ -43,22 +43,41 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
     refreshData();
   };
 
-  const saveExternalLink = () => {
+  const handleToolLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewLink(prev => ({ ...prev, logoUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveExternalLink = async () => {
     if (newLink.name && newLink.url) {
       let updatedLinks;
-      
+      const toolId = editingLinkId || `link-${Date.now()}`;
+      const tempLogo = newLink.logoUrl;
+
+      const linkToSave: ExternalLink = {
+        id: toolId,
+        name: newLink.name || '',
+        url: newLink.url || '',
+        icon: newLink.icon || 'fa-link',
+        logoUrl: '' // Guardamos vacío en metadatos, usamos IndexedDB
+      };
+
       if (editingLinkId) {
         updatedLinks = data.settings.externalLinks.map(l => 
-          l.id === editingLinkId ? { ...l, ...newLink } as ExternalLink : l
+          l.id === editingLinkId ? linkToSave : l
         );
       } else {
-        const link: ExternalLink = {
-          id: `link-${Date.now()}`,
-          name: newLink.name,
-          url: newLink.url,
-          icon: newLink.icon || 'fa-link'
-        };
-        updatedLinks = [...data.settings.externalLinks, link];
+        updatedLinks = [...data.settings.externalLinks, linkToSave];
+      }
+
+      if (tempLogo && tempLogo.startsWith('data:')) {
+        await imageStore.save(toolId, tempLogo);
       }
 
       handleUpdateSettings({ externalLinks: updatedLinks });
@@ -66,14 +85,15 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const startEditLink = (link: ExternalLink) => {
+  const startEditLink = async (link: ExternalLink) => {
+    const fullLogo = await imageStore.get(link.id);
     setEditingLinkId(link.id);
-    setNewLink({ name: link.name, url: link.url, icon: link.icon });
+    setNewLink({ ...link, logoUrl: fullLogo || link.logoUrl || '' });
   };
 
   const cancelEditLink = () => {
     setEditingLinkId(null);
-    setNewLink({ name: '', url: '', icon: 'fa-link' });
+    setNewLink({ name: '', url: '', icon: 'fa-link', logoUrl: '' });
   };
 
   const removeExternalLink = (id: string) => {
@@ -81,6 +101,7 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
       handleUpdateSettings({
         externalLinks: data.settings.externalLinks.filter(l => l.id !== id)
       });
+      imageStore.delete(id);
       if (editingLinkId === id) cancelEditLink();
     }
   };
@@ -121,21 +142,6 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
       await imageStore.save('SYSTEM_BRAND_FAVICON', url.trim());
       window.dispatchEvent(new Event('brand_updated'));
     }
-  };
-
-  const addAction = () => {
-    if (newAction.trim() && !data.settings.customActions.includes(newAction.trim())) {
-      handleUpdateSettings({
-        customActions: [...data.settings.customActions, newAction.trim()]
-      });
-      setNewAction('');
-    }
-  };
-
-  const removeAction = (action: string) => {
-    handleUpdateSettings({
-      customActions: data.settings.customActions.filter(a => a !== action)
-    });
   };
 
   return (
@@ -267,34 +273,49 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             <div className="space-y-4">
-              <div className="p-5 bg-slate-50 rounded-3xl border border-slate-100 flex items-center gap-4 mb-2 shadow-inner">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-lg shadow-indigo-100">
-                  <i className={`fa-solid ${newLink.icon}`}></i>
+              <div className="flex flex-col md:flex-row items-center gap-6 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                <div className="w-20 h-20 bg-white rounded-2xl border-2 border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden group transition-all hover:border-indigo-400 shrink-0">
+                  {newLink.logoUrl ? (
+                    <img src={newLink.logoUrl} className="w-full h-full object-contain p-2" alt="Logo" />
+                  ) : (
+                    <i className={`fa-solid ${newLink.icon} text-slate-200 text-3xl`}></i>
+                  )}
+                  <input type="file" accept="image/*" onChange={handleToolLogoUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                 </div>
-                <div>
-                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Icono Seleccionado</p>
-                  <p className="text-[10px] font-bold text-slate-900 uppercase">Vista Previa</p>
+                <div className="flex-1 space-y-2">
+                  <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Icono / Logotipo Herramienta</p>
+                  <div className="relative">
+                    <i className="fa-solid fa-link absolute left-3 top-1/2 -translate-y-1/2 text-slate-300 text-[10px]"></i>
+                    <input 
+                      type="text" 
+                      placeholder="Pegar URL de logo..." 
+                      value={newLink.logoUrl?.startsWith('data:') ? '' : newLink.logoUrl}
+                      onChange={e => setNewLink({...newLink, logoUrl: e.target.value})}
+                      className="w-full bg-white border border-slate-100 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold outline-none"
+                    />
+                  </div>
                 </div>
               </div>
+
               <div className="space-y-3">
                 <input 
                   type="text" 
-                  placeholder="Nombre (Canva, Ads, etc)" 
+                  placeholder="Nombre de la Herramienta (Ej: Canva)" 
                   value={newLink.name}
                   onChange={(e) => setNewLink({...newLink, name: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
                 />
                 <input 
                   type="text" 
-                  placeholder="URL Completa" 
+                  placeholder="URL Completa (https://...)" 
                   value={newLink.url}
                   onChange={(e) => setNewLink({...newLink, url: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
                 />
                 <select 
                   value={newLink.icon}
                   onChange={(e) => setNewLink({...newLink, icon: e.target.value})}
-                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
                 >
                   {ICON_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -309,12 +330,16 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-2 items-start content-start">
+            <div className="grid grid-cols-1 gap-2 items-start content-start max-h-[400px] overflow-y-auto no-scrollbar pr-2">
                {data.settings.externalLinks.map(link => (
                  <div key={link.id} className={`p-4 rounded-2xl flex items-center justify-between group border transition-all ${editingLinkId === link.id ? 'bg-indigo-50 border-indigo-200' : 'bg-slate-50 border-slate-100 shadow-sm'}`}>
                    <div className="flex items-center gap-4 overflow-hidden">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm ${editingLinkId === link.id ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-500 border border-slate-100'}`}>
-                        <i className={`fa-solid ${link.icon}`}></i>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden shrink-0 ${editingLinkId === link.id ? 'bg-indigo-600 text-white' : 'bg-white text-indigo-500 border border-slate-100'}`}>
+                        {link.logoUrl || editingLinkId === link.id ? (
+                           <i className={`fa-solid ${link.icon} text-sm`}></i>
+                        ) : (
+                           <i className={`fa-solid ${link.icon} text-sm`}></i>
+                        )}
                       </div>
                       <div className="min-w-0">
                         <p className="text-[10px] font-black text-slate-800 uppercase truncate">{link.name}</p>
