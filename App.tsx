@@ -147,10 +147,11 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      <div className="flex min-h-screen bg-slate-50 text-slate-900 relative">
         <Sidebar onLogout={() => { localStorage.removeItem('pm_auth'); setIsAuthenticated(false); }} />
-        <main className="flex-1 ml-64 p-8 flex flex-col overflow-x-hidden pb-16">
-          <div className="flex-1">
+        
+        <div className="flex-1 flex flex-col ml-64 min-h-screen">
+          <main className="flex-1 p-8 pb-16 overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
               <Route path="/agenda" element={<AgendaView data={data} refreshData={refreshData} />} />
@@ -165,16 +166,19 @@ const App: React.FC = () => {
               <Route path="/settings" element={<SettingsView data={data} refreshData={refreshData} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-          </div>
+          </main>
           
-          {/* FOOTER FIJO Y COMPACTO */}
-          <footer className="fixed bottom-0 right-0 left-64 bg-white/80 backdrop-blur-md border-t border-slate-100 py-2.5 px-8 flex items-center justify-center gap-3 z-40">
-             <ASDLogo className="w-6 h-auto grayscale opacity-40" forceDefault />
-             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">
-                Atreyu Servicios Digitales &copy; {new Date().getFullYear()}
+          {/* FOOTER ULTRA COMPACTO FIJO */}
+          <footer className="fixed bottom-0 right-0 left-64 bg-white/95 backdrop-blur-md border-t border-slate-100 py-1.5 px-6 flex items-center justify-between z-[60] shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
+             <div className="flex items-center gap-2">
+                <ASDLogo className="w-5 h-auto grayscale opacity-40 hover:opacity-100 transition-opacity" forceDefault />
+                <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest border-l border-slate-100 pl-2">Atreyu Digital Ecosystem</span>
+             </div>
+             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.3em]">
+                ASD Atreyu &copy; {new Date().getFullYear()}
              </p>
           </footer>
-        </main>
+        </div>
       </div>
     </HashRouter>
   );

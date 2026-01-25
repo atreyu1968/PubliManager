@@ -4,35 +4,51 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
+  background-color: #f8fafc;
 }
 
 /* Scrollbar mejorado para mayor usabilidad */
 ::-webkit-scrollbar {
-  width: 10px; /* Más ancho para facilitar el agarre */
-  height: 10px;
+  width: 12px; /* Más ancho para facilitar el agarre */
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
   background: #f1f5f9;
-  border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 10px;
-  border: 2px solid #f1f5f9;
+  border-radius: 6px;
+  border: 3px solid #f1f5f9;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
+/* Scrollbar específico para áreas de contenido */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border: 2px solid #ffffff;
 }
 
 .asd-logo-text {
   background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
 }

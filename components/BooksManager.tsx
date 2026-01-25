@@ -292,9 +292,9 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{author?.name || 'Autor desconocido'}</p>
                 
                 {series && (
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-2 bg-amber-50/50 px-2 py-1 rounded-lg w-fit border border-amber-100">
                     <i className="fa-solid fa-layer-group text-[9px] text-amber-500"></i>
-                    <p className="text-[9px] font-black text-amber-600 uppercase tracking-widest">
+                    <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">
                       {series.name} #{book.seriesOrder || 1}
                     </p>
                   </div>
@@ -351,7 +351,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
       {/* MODAL DE EDICIÓN / LANZAMIENTO */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4 lg:p-10">
-          <div className="bg-white rounded-[3rem] max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[95vh] animate-scaleIn border border-white/10">
+          <div className="bg-white rounded-[3rem] max-w-5xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn border border-white/10">
             
             <div className="px-10 py-6 border-b border-slate-100 bg-white shrink-0 flex justify-between items-center z-10">
               <div>
@@ -520,7 +520,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
               </div>
             </div>
 
-            <div className="px-10 py-6 border-t border-slate-100 bg-white flex flex-col md:flex-row gap-4 items-center shrink-0 z-10">
+            <div className="px-10 py-6 border-t border-slate-100 bg-white flex flex-col md:flex-row gap-4 items-center shrink-0 z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.03)]">
               <button onClick={closeModal} className="w-full md:w-auto px-8 py-4 text-slate-400 font-black text-[10px] tracking-[0.3em] uppercase hover:text-slate-900 transition-colors">DESCARTAR</button>
               <div className="flex-1"></div>
               <button onClick={handleSaveBook} className="w-full md:w-auto bg-slate-900 text-white px-12 py-5 rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl transition-all active:scale-95 hover:bg-indigo-600">
