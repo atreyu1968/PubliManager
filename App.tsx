@@ -109,7 +109,6 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Escuchar cambios de almacenamiento para sincronizar la UI automáticamente
     const handleStorageUpdate = (e: any) => {
       if (e.detail) {
         setData(e.detail);
@@ -119,7 +118,7 @@ const App: React.FC = () => {
     };
 
     window.addEventListener('storage_updated', handleStorageUpdate);
-    window.addEventListener('storage', refreshData); // Cambios desde otras pestañas
+    window.addEventListener('storage', refreshData);
 
     const applyFavicon = async () => {
       const fav = await imageStore.get('SYSTEM_BRAND_FAVICON');
@@ -150,7 +149,7 @@ const App: React.FC = () => {
     <HashRouter>
       <div className="flex min-h-screen bg-slate-50 text-slate-900">
         <Sidebar onLogout={() => { localStorage.removeItem('pm_auth'); setIsAuthenticated(false); }} />
-        <main className="flex-1 ml-64 p-8 flex flex-col overflow-x-hidden">
+        <main className="flex-1 ml-64 p-8 flex flex-col overflow-x-hidden pb-16">
           <div className="flex-1">
             <Routes>
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
@@ -168,17 +167,12 @@ const App: React.FC = () => {
             </Routes>
           </div>
           
-          <footer className="mt-40 pb-16 flex flex-col items-center justify-center gap-8">
-            <div className="flex items-center gap-5 opacity-20">
-              <div className="h-[1px] w-32 bg-slate-400"></div>
-              <ASDLogo className="w-10 h-auto grayscale" forceDefault />
-              <div className="h-[1px] w-32 bg-slate-400"></div>
-            </div>
-            <div className="text-center space-y-3">
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em]">
+          {/* FOOTER FIJO Y COMPACTO */}
+          <footer className="fixed bottom-0 right-0 left-64 bg-white/80 backdrop-blur-md border-t border-slate-100 py-2.5 px-8 flex items-center justify-center gap-3 z-40">
+             <ASDLogo className="w-6 h-auto grayscale opacity-40" forceDefault />
+             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em]">
                 Atreyu Servicios Digitales &copy; {new Date().getFullYear()}
-              </p>
-            </div>
+             </p>
           </footer>
         </main>
       </div>
