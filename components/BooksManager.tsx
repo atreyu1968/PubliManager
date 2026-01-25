@@ -118,6 +118,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
     if (editingId) {
       const index = currentData.books.findIndex(b => b.id === editingId);
       if (index !== -1) {
+        const oldBook = currentData.books[index];
         const bookToSave = { 
           ...newBook, 
           id: editingId,
@@ -130,6 +131,13 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
            await imageStore.save(editingId, tempCoverUrl);
         }
+
+        // LOGGING MODIFICACIÓN
+        let details = `Actualización de metadatos.`;
+        if (oldBook.status !== bookToSave.status) {
+          details = `Cambio de estado: ${oldBook.status} -> ${bookToSave.status}.`;
+        }
+        db.logAction(editingId, bookToSave.title, oldBook.status !== bookToSave.status ? 'Cambio de Estado' : 'Modificación', details);
       }
       db.saveData(currentData);
     } else {
@@ -156,6 +164,9 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
         if (tempCoverUrl && tempCoverUrl.startsWith('data:')) {
            await imageStore.save(bookId, tempCoverUrl);
         }
+
+        // LOGGING CREACIÓN
+        db.logAction(bookId, freshBook.title, 'Creación', `Nuevo proyecto iniciado para el idioma ${lang}.`);
       }
       db.saveData(currentData);
     }
@@ -339,7 +350,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                   <button onClick={() => openEdit(book)} className="p-2.5 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-900 hover:text-white transition-all">
                     <i className="fa-solid fa-edit"></i>
                   </button>
-                  <button onClick={() => { if(confirm('¿Eliminar proyecto permanentemente?')) { db.deleteItem('books', book.id); refreshData(); } }} className="p-2.5 text-slate-200 hover:text-red-500 transition-colors">
+                  <button onClick={() => { if(confirm('¿Eliminar proyecto permanentemente?')) { db.deleteItem('books', book.id); db.logAction(book.id, book.title, 'Eliminación', 'Proyecto eliminado del catálogo maestro.'); refreshData(); } }} className="p-2.5 text-slate-200 hover:text-red-500 transition-colors">
                     <i className="fa-solid fa-trash-can"></i>
                   </button>
                 </div>

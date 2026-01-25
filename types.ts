@@ -25,6 +25,15 @@ export interface Series {
   language?: string; // Campo añadido para soporte multi-idioma
 }
 
+export interface HistoryRecord {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  action: 'Creación' | 'Modificación' | 'Eliminación' | 'Cambio de Estado' | 'Publicación';
+  timestamp: string;
+  details?: string;
+}
+
 export interface Book {
   id: string;
   title: string;
@@ -79,4 +88,5 @@ export interface AppData {
   books: Book[];
   tasks: Task[];
   sales: SaleRecord[];
+  history: HistoryRecord[];
 }

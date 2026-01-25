@@ -1,5 +1,5 @@
 
-import { AppData, Imprint } from './types';
+import { AppData, Imprint, HistoryRecord } from './types';
 import { imageStore } from './imageStore';
 
 const STORAGE_KEY = 'publimanager_asd_v3';
@@ -23,7 +23,8 @@ const initialData: AppData = {
   series: [],
   books: [],
   tasks: [],
-  sales: []
+  sales: [],
+  history: []
 };
 
 export const db = {
@@ -46,6 +47,9 @@ export const db = {
       if (!parsed.imprints || parsed.imprints.length === 0) {
         parsed.imprints = initialImprints;
       }
+      if (!parsed.history) {
+        parsed.history = [];
+      }
       return parsed;
     } catch (e) {
       console.error("Error al leer de localStorage", e);
@@ -55,16 +59,32 @@ export const db = {
   
   saveData: (data: AppData) => {
     try {
-      // Limpiamos las imágenes de la data antes de guardar en localStorage para ahorrar espacio
-      // Las imágenes reales viven en IndexedDB
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       window.dispatchEvent(new Event('storage_updated'));
       return true;
     } catch (e) {
       console.error("Error crítico de persistencia:", e);
-      alert("⚠️ ERROR DE ESPACIO: No se pudo guardar la configuración. Contacta con soporte.");
+      alert("⚠️ ERROR DE ESPACIO: No se pudo guardar la configuración.");
       return false;
     }
+  },
+
+  logAction: (bookId: string, bookTitle: string, action: HistoryRecord['action'], details?: string) => {
+    const data = db.getData();
+    const newRecord: HistoryRecord = {
+      id: `hist-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+      bookId,
+      bookTitle,
+      action,
+      timestamp: new Date().toISOString(),
+      details
+    };
+    data.history.unshift(newRecord); // Añadir al inicio para que el más reciente sea el primero
+    // Limitar historial a los últimos 500 registros para no saturar localStorage
+    if (data.history.length > 500) {
+      data.history = data.history.slice(0, 500);
+    }
+    db.saveData(data);
   },
 
   addItem: <T extends { id: string },>(collection: keyof AppData, item: T) => {
@@ -86,7 +106,7 @@ export const db = {
   deleteItem: (collection: keyof AppData, id: string) => {
     const data = db.getData();
     (data[collection] as any) = (data[collection] as any[]).filter(i => i.id !== id);
-    imageStore.delete(id); // Borramos también de IndexedDB
+    imageStore.delete(id); 
     return db.saveData(data);
   },
 
@@ -120,22 +140,17 @@ export const db = {
           let metadata = backup;
           let media = {};
 
-          // Detectar si es un backup nuevo (con media) o antiguo
           if (backup.metadata && backup.media) {
             metadata = backup.metadata;
             media = backup.media;
           }
 
           if (metadata.books && metadata.imprints) {
-             // 1. Guardar Metadata
              db.saveData(metadata);
-             
-             // 2. Restaurar Media en IndexedDB
              await imageStore.clear();
              for (const [id, dataUrl] of Object.entries(media)) {
                await imageStore.save(id, dataUrl as string);
              }
-
              resolve(true);
           } else {
             alert("Formato de archivo no válido.");

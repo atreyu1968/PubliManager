@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { AppData, Task, Book } from '../types';
+
+import React, { useState, useMemo } from 'react';
+import { AppData, Task, Book, Pseudonym } from '../types';
 import { db } from '../db';
 
 interface Props {
@@ -9,159 +10,315 @@ interface Props {
 
 const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [newTask, setNewTask] = useState<Partial<Task>>({
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  
+  // Filtros
+  const [authorFilter, setAuthorFilter] = useState<string>('Todos');
+  const [bookFilter, setBookFilter] = useState<string>('Todos');
+  const [statusFilter, setStatusFilter] = useState<'Todas' | 'Pendientes' | 'Completadas'>('Todas');
+
+  const [taskForm, setTaskForm] = useState<Partial<Task>>({
     title: '',
     description: '',
     dueDate: new Date().toISOString().split('T')[0],
     type: 'Metadata',
-    completed: false
+    completed: false,
+    bookId: 'none'
   });
 
   const getDays = () => {
     const days = [];
+    const today = new Date();
     for (let i = 0; i < 7; i++) {
       const d = new Date();
-      d.setDate(d.getDate() + i);
+      d.setDate(today.getDate() + i);
       days.push(d);
     }
     return days;
   };
 
-  const days = getDays();
+  const next7Days = getDays();
+  const todayStr = new Date().toISOString().split('T')[0];
 
-  const handleAddTask = () => {
-    if (newTask.title && newTask.dueDate) {
-      db.addItem('tasks', {
-        ...newTask,
-        id: Date.now().toString(),
-        bookId: 'none'
-      } as Task);
+  // Lógica de filtrado avanzada
+  const filteredTasks = useMemo(() => {
+    return data.tasks.filter(t => {
+      const book = data.books.find(b => b.id === t.bookId);
+      
+      const matchesAuthor = authorFilter === 'Todos' || (book && book.pseudonymId === authorFilter);
+      const matchesBook = bookFilter === 'Todos' || t.bookId === bookFilter;
+      const matchesStatus = statusFilter === 'Todas' || 
+                           (statusFilter === 'Pendientes' && !t.completed) || 
+                           (statusFilter === 'Completadas' && t.completed);
+      
+      return matchesAuthor && matchesBook && matchesStatus;
+    });
+  }, [data.tasks, data.books, authorFilter, bookFilter, statusFilter]);
+
+  // Separar tareas pasadas/pendientes fuera de los 7 días
+  const pastOrOtherTasks = useMemo(() => {
+    const next7DaysStrings = next7Days.map(d => d.toISOString().split('T')[0]);
+    return filteredTasks.filter(t => !next7DaysStrings.includes(t.dueDate));
+  }, [filteredTasks, next7Days]);
+
+  const handleSaveTask = () => {
+    if (taskForm.title && taskForm.dueDate) {
+      if (editingTaskId) {
+        db.updateItem('tasks', { ...taskForm, id: editingTaskId } as Task);
+      } else {
+        db.addItem('tasks', {
+          ...taskForm,
+          id: `task-${Date.now()}`,
+          completed: false
+        } as Task);
+      }
       refreshData();
-      setShowTaskModal(false);
-      setNewTask({
-        title: '',
-        description: '',
-        dueDate: new Date().toISOString().split('T')[0],
-        type: 'Metadata',
-        completed: false
-      });
+      closeModal();
     }
   };
 
-  const toggleTask = (task: Task) => {
+  const openEdit = (task: Task) => {
+    setTaskForm(task);
+    setEditingTaskId(task.id);
+    setShowTaskModal(true);
+  };
+
+  const closeModal = () => {
+    setShowTaskModal(false);
+    setEditingTaskId(null);
+    setTaskForm({
+      title: '',
+      description: '',
+      dueDate: new Date().toISOString().split('T')[0],
+      type: 'Metadata',
+      completed: false,
+      bookId: 'none'
+    });
+  };
+
+  const toggleTask = (e: React.MouseEvent, task: Task) => {
+    e.stopPropagation();
     db.updateItem('tasks', { ...task, completed: !task.completed });
     refreshData();
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex justify-between items-center">
+    <div className="space-y-8 animate-fadeIn text-slate-900 pb-20">
+      {/* HEADER Y ACCIONES */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight uppercase">Agenda de Lanzamientos</h1>
-          <p className="text-slate-500 text-sm font-medium">Tareas y publicaciones programadas para la próxima semana.</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
+            <i className="fa-solid fa-calendar-check text-indigo-600"></i>
+            Control de Agenda
+          </h1>
+          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
+            {filteredTasks.length} Tareas filtradas en el sistema
+          </p>
         </div>
         <button 
           onClick={() => setShowTaskModal(true)}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-2xl hover:bg-indigo-700 transition font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100"
+          className="w-full lg:w-auto bg-slate-900 text-white px-8 py-4 rounded-2xl hover:bg-indigo-600 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.2em] uppercase"
         >
-          <i className="fa-solid fa-plus mr-2"></i> Nueva Tarea
+          <i className="fa-solid fa-plus-circle mr-2"></i> Nuevo Hito Editorial
         </button>
       </div>
 
-      <div className="flex flex-col gap-6">
-        {days.map((day, idx) => {
-          const dateStr = day.toISOString().split('T')[0];
-          const dayTasks = data.tasks.filter(t => t.dueDate === dateStr);
-          // Filtrar libros por fecha programada
-          const dayProgrammed = data.books.filter(b => b.scheduledDate === dateStr);
-          const isToday = idx === 0;
+      {/* FILTROS DE AGENDA */}
+      <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div>
+          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Filtrar por Autor</label>
+          <select 
+            value={authorFilter}
+            onChange={(e) => setAuthorFilter(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[10px] font-bold text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/10"
+          >
+            <option value="Todos">Todos los autores</option>
+            {data.pseudonyms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </div>
 
-          return (
-            <div key={dateStr} className={`flex flex-col md:flex-row gap-6 p-6 rounded-[2.5rem] border transition-all ${isToday ? 'bg-indigo-50 border-indigo-200 shadow-xl shadow-indigo-100/50 scale-[1.02]' : 'bg-white border-slate-100 shadow-sm'}`}>
-              <div className="w-full md:w-32 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6">
-                <span className="text-[10px] font-black uppercase text-slate-400 tracking-[0.3em] mb-1">{day.toLocaleDateString('es-ES', { weekday: 'long' })}</span>
-                <span className={`text-4xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-800'}`}>{day.getDate()}</span>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{day.toLocaleDateString('es-ES', { month: 'long' })}</span>
-                {isToday && (
-                  <span className="mt-2 bg-indigo-600 text-white text-[8px] font-black px-3 py-1 rounded-full uppercase tracking-widest">Hoy</span>
-                )}
-              </div>
-              
-              <div className="flex-1 space-y-4">
-                {dayProgrammed.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.3em] ml-1">Lanzamientos Programados</p>
-                    <div className="flex flex-wrap gap-2">
-                      {dayProgrammed.map(book => (
-                        <div key={book.id} className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-[10px] font-black flex items-center gap-2 shadow-lg shadow-emerald-100 uppercase tracking-widest border border-emerald-500">
-                          <i className="fa-solid fa-rocket"></i> {book.title} ({book.language})
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        <div>
+          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Filtrar por Libro</label>
+          <select 
+            value={bookFilter}
+            onChange={(e) => setBookFilter(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[10px] font-bold text-slate-600 outline-none focus:ring-2 focus:ring-indigo-500/10"
+          >
+            <option value="Todos">Todos los libros</option>
+            {data.books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+          </select>
+        </div>
 
-                <div className="space-y-2">
-                  <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] ml-1">Hitos y Tareas</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {dayTasks.length > 0 ? dayTasks.map(task => (
-                      <div 
-                        key={task.id} 
-                        className={`p-4 rounded-2xl border flex items-start gap-4 transition-all cursor-pointer hover:shadow-lg ${task.completed ? 'bg-slate-50 border-slate-100 grayscale opacity-50' : 'bg-white border-slate-200 shadow-sm'}`}
-                        onClick={() => toggleTask(task)}
-                      >
-                        <div className={`mt-0.5 h-6 w-6 rounded-xl border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-300 bg-white'}`}>
-                          {task.completed && <i className="fa-solid fa-check text-white text-[10px]"></i>}
-                        </div>
-                        <div className="min-w-0">
-                          <p className={`text-sm font-bold truncate ${task.completed ? 'line-through text-slate-500' : 'text-slate-900'}`}>{task.title}</p>
-                          <p className="text-[9px] text-slate-400 mt-1 uppercase font-black tracking-widest">{task.type}</p>
-                        </div>
-                      </div>
-                    )) : (
-                      <div className="py-4 px-1">
-                        <p className="text-slate-300 text-[10px] font-bold uppercase tracking-widest italic italic">Agenda libre</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        <div>
+          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 block ml-1">Estado</label>
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+            {['Todas', 'Pendientes', 'Completadas'].map((opt) => (
+              <button
+                key={opt}
+                onClick={() => setStatusFilter(opt as any)}
+                className={`flex-1 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${statusFilter === opt ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
+      {/* VISTA 7 DÍAS (PRÓXIMOS) */}
+      <div className="space-y-6">
+        <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+          <span className="w-8 h-[1px] bg-slate-200"></span>
+          Próximos 7 Días
+          <span className="flex-1 h-[1px] bg-slate-200"></span>
+        </h2>
+        <div className="grid grid-cols-1 gap-4">
+          {next7Days.map((day, idx) => {
+            const dateStr = day.toISOString().split('T')[0];
+            const dayTasks = filteredTasks.filter(t => t.dueDate === dateStr);
+            const isToday = idx === 0;
+
+            return (
+              <div key={dateStr} className={`flex flex-col md:flex-row gap-6 p-6 rounded-[2.5rem] border transition-all ${isToday ? 'bg-indigo-50 border-indigo-200 shadow-lg shadow-indigo-100/50' : 'bg-white border-slate-100 shadow-sm'}`}>
+                <div className="w-full md:w-28 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-slate-100 pb-4 md:pb-0 md:pr-6 shrink-0">
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest mb-1">{day.toLocaleDateString('es-ES', { weekday: 'short' })}</span>
+                  <span className={`text-3xl font-black ${isToday ? 'text-indigo-600' : 'text-slate-800'}`}>{day.getDate()}</span>
+                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">{day.toLocaleDateString('es-ES', { month: 'short' })}</span>
+                </div>
+                
+                <div className="flex-1 space-y-3">
+                  {dayTasks.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {dayTasks.map(task => {
+                        const book = data.books.find(b => b.id === task.bookId);
+                        return (
+                          <div 
+                            key={task.id} 
+                            onClick={() => openEdit(task)}
+                            className={`p-4 rounded-2xl border flex items-start gap-3 transition-all cursor-pointer group hover:shadow-md ${task.completed ? 'bg-slate-50 border-slate-100 opacity-60' : 'bg-white border-slate-100'}`}
+                          >
+                            <button 
+                              onClick={(e) => toggleTask(e, task)}
+                              className={`mt-0.5 h-5 w-5 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500' : 'border-slate-200 bg-white group-hover:border-indigo-400'}`}
+                            >
+                              {task.completed && <i className="fa-solid fa-check text-white text-[8px]"></i>}
+                            </button>
+                            <div className="min-w-0">
+                              <p className={`text-xs font-black truncate leading-tight ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.title}</p>
+                              {book && <p className="text-[7px] font-bold text-indigo-400 uppercase mt-1 truncate">{book.title}</p>}
+                              <p className="text-[7px] text-slate-300 mt-0.5 uppercase font-black tracking-widest">{task.type}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 h-full opacity-20">
+                      <div className="w-1 h-1 rounded-full bg-slate-400"></div>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 italic">Día despejado</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECCIÓN TAREAS PASADAS Y OTRAS */}
+      {pastOrOtherTasks.length > 0 && (
+        <div className="space-y-6 pt-10">
+          <h2 className="text-sm font-black text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+            <span className="w-8 h-[1px] bg-slate-200"></span>
+            Tareas Pasadas / Otras Fechas
+            <span className="flex-1 h-[1px] bg-slate-200"></span>
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {pastOrOtherTasks.sort((a,b) => b.dueDate.localeCompare(a.dueDate)).map(task => {
+              const book = data.books.find(b => b.id === task.bookId);
+              const isOverdue = !task.completed && task.dueDate < todayStr;
+              
+              return (
+                <div 
+                  key={task.id} 
+                  onClick={() => openEdit(task)}
+                  className={`p-5 rounded-3xl border transition-all cursor-pointer group hover:shadow-xl ${task.completed ? 'bg-slate-50 border-slate-100 opacity-50' : isOverdue ? 'bg-red-50 border-red-100 shadow-sm' : 'bg-white border-slate-100 shadow-sm'}`}
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <span className={`text-[7px] font-black px-2 py-0.5 rounded-lg uppercase tracking-widest ${isOverdue ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                      {task.dueDate} {isOverdue ? '- VENCIDA' : ''}
+                    </span>
+                    <button 
+                      onClick={(e) => toggleTask(e, task)}
+                      className={`h-5 w-5 rounded-lg border-2 flex items-center justify-center transition-all ${task.completed ? 'bg-emerald-500 border-emerald-500' : isOverdue ? 'border-red-300 bg-white' : 'border-slate-200 bg-white group-hover:border-indigo-400'}`}
+                    >
+                      {task.completed && <i className="fa-solid fa-check text-white text-[8px]"></i>}
+                    </button>
+                  </div>
+                  <p className={`text-xs font-black leading-tight mb-2 ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.title}</p>
+                  {book && <p className="text-[8px] font-bold text-indigo-400 uppercase mb-1">{book.title}</p>}
+                  <p className="text-[8px] text-slate-400 font-black tracking-widest uppercase">{task.type}</p>
+                  {task.description && <p className="text-[9px] text-slate-400 mt-3 line-clamp-2 border-t border-slate-100 pt-2 italic">{task.description}</p>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE TAREA (CREACIÓN / EDICIÓN) */}
       {showTaskModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl animate-scaleIn border border-white/20">
-            <h2 className="text-2xl font-black mb-8 text-slate-900 uppercase tracking-tighter">Nueva Tarea ASD</h2>
+        <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl animate-scaleIn border border-white/10">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">
+                {editingTaskId ? 'Editar Hito' : 'Nuevo Hito ASD'}
+              </h2>
+              <button onClick={closeModal} className="text-slate-300 hover:text-slate-900 transition-colors">
+                <i className="fa-solid fa-times text-xl"></i>
+              </button>
+            </div>
+
             <div className="space-y-5">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Título de la Tarea</label>
                 <input 
                   type="text" 
-                  value={newTask.title} 
-                  onChange={e => setNewTask({...newTask, title: e.target.value})}
-                  className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="Ej: Revisar maquetación"
+                  value={taskForm.title} 
+                  onChange={e => setTaskForm({...taskForm, title: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 font-black text-slate-800 focus:ring-4 focus:ring-indigo-500/10 outline-none shadow-inner"
+                  placeholder="Ej: Revisar maquetación final"
                 />
               </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Vincular a Libro</label>
+                <select 
+                  value={taskForm.bookId} 
+                  onChange={e => setTaskForm({...taskForm, bookId: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-[10px] font-black uppercase text-slate-600 outline-none"
+                >
+                  <option value="none">Tarea General (Sin libro)</option>
+                  {data.books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
+                </select>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Fecha Límite</label>
                   <input 
                     type="date" 
-                    value={newTask.dueDate} 
-                    onChange={e => setNewTask({...newTask, dueDate: e.target.value})}
-                    className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-bold text-slate-800"
+                    value={taskForm.dueDate} 
+                    onChange={e => setTaskForm({...taskForm, dueDate: e.target.value})}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-[10px] font-black text-slate-600"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Tipo</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Categoría</label>
                   <select 
-                    value={newTask.type} 
-                    onChange={e => setNewTask({...newTask, type: e.target.value as any})}
-                    className="w-full bg-slate-50 border-none rounded-2xl p-4 text-xs font-bold text-slate-800"
+                    value={taskForm.type} 
+                    onChange={e => setTaskForm({...taskForm, type: e.target.value as any})}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-[10px] font-black uppercase text-slate-600"
                   >
                     <option value="Metadata">Metadatos</option>
                     <option value="Marketing">Marketing</option>
@@ -170,27 +327,37 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
                   </select>
                 </div>
               </div>
+
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Notas</label>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Notas de Producción</label>
                 <textarea 
-                  value={newTask.description} 
-                  onChange={e => setNewTask({...newTask, description: e.target.value})}
-                  className="w-full bg-slate-50 border-none rounded-2xl p-4 h-28 text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500 outline-none"
-                  placeholder="Detalles del hito..."
+                  value={taskForm.description} 
+                  onChange={e => setTaskForm({...taskForm, description: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-4 h-28 text-xs font-bold text-slate-600 outline-none shadow-inner resize-none"
+                  placeholder="Instrucciones o detalles del hito..."
                 />
               </div>
+
               <div className="flex gap-4 pt-6">
+                {editingTaskId && (
+                  <button 
+                    onClick={() => { if(confirm('¿Eliminar esta tarea?')) { db.deleteItem('tasks', editingTaskId); refreshData(); closeModal(); } }}
+                    className="p-4 text-red-400 hover:text-red-600 transition-colors"
+                  >
+                    <i className="fa-solid fa-trash-can"></i>
+                  </button>
+                )}
                 <button 
-                  onClick={() => setShowTaskModal(false)}
-                  className="flex-1 py-4 text-slate-400 font-black text-[10px] tracking-[0.2em] uppercase"
+                  onClick={closeModal}
+                  className="flex-1 py-4 text-slate-400 font-black text-[10px] tracking-[0.2em] uppercase hover:text-slate-900 transition-colors"
                 >
                   Cancelar
                 </button>
                 <button 
-                  onClick={handleAddTask}
-                  className="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl transition-transform active:scale-95 uppercase"
+                  onClick={handleSaveTask}
+                  className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl transition-all active:scale-95 uppercase"
                 >
-                  Guardar Hito
+                  {editingTaskId ? 'Actualizar Hito' : 'Crear Hito'}
                 </button>
               </div>
             </div>

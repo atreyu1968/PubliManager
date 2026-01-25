@@ -14,6 +14,7 @@ import AgendaView from './components/AgendaView';
 import SalesTracker from './components/SalesTracker';
 import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
+import HistoryView from './components/HistoryView';
 
 export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -44,6 +45,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     { path: '/', icon: 'fa-chart-line', label: 'Panel' },
     { path: '/agenda', icon: 'fa-calendar-days', label: 'Agenda 7 Días' },
     { path: '/books', icon: 'fa-book', label: 'Catálogo' },
+    { path: '/history', icon: 'fa-clock-rotate-left', label: 'Historial / Logs' },
     { path: '/series', icon: 'fa-layer-group', label: 'Sagas / Series' },
     { path: '/sales', icon: 'fa-money-bill-trend-up', label: 'Ventas y KENPC' },
     { path: '/imprints', icon: 'fa-tags', label: 'Sellos' },
@@ -113,6 +115,7 @@ const App: React.FC = () => {
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
               <Route path="/agenda" element={<AgendaView data={data} refreshData={refreshData} />} />
               <Route path="/books" element={<BooksManager data={data} refreshData={refreshData} />} />
+              <Route path="/history" element={<HistoryView data={data} />} />
               <Route path="/series" element={<SeriesManager data={data} refreshData={refreshData} />} />
               <Route path="/sales" element={<SalesTracker data={data} refreshData={refreshData} />} />
               <Route path="/imprints" element={<ImprintsManager data={data} refreshData={refreshData} />} />
@@ -122,7 +125,6 @@ const App: React.FC = () => {
             </Routes>
           </div>
           
-          {/* PIE DE PÁGINA ASD ELITE REDISEÑADO */}
           <footer className="mt-40 pb-16 flex flex-col items-center justify-center gap-8">
             <div className="flex items-center gap-5 opacity-20">
               <div className="h-[1px] w-32 bg-slate-400"></div>
