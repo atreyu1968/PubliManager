@@ -268,99 +268,101 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
 
       {/* LISTADO DINÁMICO */}
       <div className={isListView ? "space-y-4" : "grid grid-cols-1 xl:grid-cols-2 gap-6"}>
-        {filteredBooks.length > 0 ? filteredBooks.map(book => {
-          const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
-          const series = data.series.find(s => s.id === book.seriesId);
-          const displayCover = covers[book.id] || book.coverUrl;
-          
-          return (
-            <div key={book.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex items-start gap-6 p-6 group relative overflow-hidden">
-              <div className="w-24 h-36 bg-slate-50 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100 relative">
-                {displayCover ? (
-                  <img src={displayCover} className="w-full h-full object-cover" alt={book.title} />
-                ) : (
-                  <i className="fa-solid fa-book-bookmark text-slate-200 text-2xl"></i>
-                )}
-                {book.kindleUnlimited && (
-                   <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase">KU</div>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <span className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest border ${getStatusStyle(book.status)}`}>
-                    {book.status}
-                  </span>
-                  <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{book.language}</span>
-                  {book.asin && (
-                    <span className="px-2 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-lg text-[7px] font-black uppercase tracking-widest">
-                      ASIN: {book.asin}
-                    </span>
+        {filteredBooks.length > 0 ? (
+          filteredBooks.map(book => {
+            const author = data.pseudonyms.find(p => p.id === book.pseudonymId);
+            const series = data.series.find(s => s.id === book.seriesId);
+            const displayCover = covers[book.id] || book.coverUrl;
+            
+            return (
+              <div key={book.id} className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all flex items-start gap-6 p-6 group relative overflow-hidden">
+                <div className="w-24 h-36 bg-slate-50 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner flex items-center justify-center border border-slate-100 relative">
+                  {displayCover ? (
+                    <img src={displayCover} className="w-full h-full object-cover" alt={book.title} />
+                  ) : (
+                    <i className="fa-solid fa-book-bookmark text-slate-200 text-2xl"></i>
+                  )}
+                  {book.kindleUnlimited && (
+                    <div className="absolute top-2 right-2 bg-indigo-600 text-white text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg uppercase">KU</div>
                   )}
                 </div>
                 
-                <h3 className="text-lg font-black text-slate-900 truncate pr-10 leading-none mb-1 group-hover:text-indigo-600 transition-colors">{book.title}</h3>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{author?.name || 'Autor desconocido'}</p>
-                
-                {series && (
-                  <div className="flex items-center gap-2 mb-2 bg-amber-50/50 px-2 py-1 rounded-lg w-fit border border-amber-100">
-                    <i className="fa-solid fa-layer-group text-[9px] text-amber-500"></i>
-                    <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">
-                      {series.name} #{book.seriesOrder || 1}
-                    </p>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-2">
+                    <span className={`px-2 py-0.5 rounded-lg text-[7px] font-black uppercase tracking-widest border ${getStatusStyle(book.status)}`}>
+                      {book.status}
+                    </span>
+                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-widest">{book.language}</span>
+                    {book.asin && (
+                      <span className="px-2 py-0.5 bg-slate-100 text-slate-500 border border-slate-200 rounded-lg text-[7px] font-black uppercase tracking-widest">
+                        ASIN: {book.asin}
+                      </span>
+                    )}
                   </div>
-                )}
-
-                {/* VISUALIZADOR DE FORMATOS */}
-                <div className="flex items-center gap-3 mt-1 mb-3">
-                  {book.formats?.includes('Ebook') && <span title="Ebook Disponible" className="w-5 h-5 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-md text-[10px]"><i className="fa-solid fa-tablet-screen-button"></i></span>}
-                  {book.formats?.includes('Papel') && <span title="Tapa Blanda Disponible" className="w-5 h-5 flex items-center justify-center bg-blue-50 text-blue-600 rounded-md text-[10px]"><i className="fa-solid fa-book"></i></span>}
-                  {book.formats?.includes('Audio') && <span title="Audiolibro Disponible" className="w-5 h-5 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md text-[10px]"><i className="fa-solid fa-headphones"></i></span>}
-                </div>
-                
-                <div className="flex items-center gap-4 mt-4">
-                  {book.price > 0 && (
-                    <div className="flex items-center gap-1.5">
-                       <i className="fa-solid fa-tag text-[10px] text-slate-300"></i>
-                       <span className="text-[11px] font-black text-slate-700">{book.price.toFixed(2)}€</span>
+                  
+                  <h3 className="text-lg font-black text-slate-900 truncate pr-10 leading-none mb-1 group-hover:text-indigo-600 transition-colors">{book.title}</h3>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{author?.name || 'Autor desconocido'}</p>
+                  
+                  {series && (
+                    <div className="flex items-center gap-2 mb-2 bg-amber-50/50 px-2 py-1 rounded-lg w-fit border border-amber-100">
+                      <i className="fa-solid fa-layer-group text-[9px] text-amber-500"></i>
+                      <p className="text-[9px] font-black text-amber-700 uppercase tracking-widest">
+                        {series.name} #{book.seriesOrder || 1}
+                      </p>
                     </div>
                   )}
-                  <div className="h-4 w-[1px] bg-slate-100"></div>
-                  <div className="flex items-center gap-3">
-                    {book.amazonLink && (
-                      <a href={book.amazonLink} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all">
-                        <i className="fa-brands fa-amazon text-[10px]"></i>
-                      </a>
+
+                  <div className="flex items-center gap-3 mt-1 mb-3">
+                    {book.formats?.includes('Ebook') && <span title="Ebook Disponible" className="w-5 h-5 flex items-center justify-center bg-indigo-50 text-indigo-600 rounded-md text-[10px]"><i className="fa-solid fa-tablet-screen-button"></i></span>}
+                    {book.formats?.includes('Papel') && <span title="Tapa Blanda Disponible" className="w-5 h-5 flex items-center justify-center bg-blue-50 text-blue-600 rounded-md text-[10px]"><i className="fa-solid fa-book"></i></span>}
+                    {book.formats?.includes('Audio') && <span title="Audiolibro Disponible" className="w-5 h-5 flex items-center justify-center bg-emerald-50 text-emerald-600 rounded-md text-[10px]"><i className="fa-solid fa-headphones"></i></span>}
+                  </div>
+                  
+                  <div className="flex items-center gap-4 mt-4">
+                    {book.price > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <i className="fa-solid fa-tag text-[10px] text-slate-300"></i>
+                        <span className="text-[11px] font-black text-slate-700">{book.price.toFixed(2)}€</span>
+                      </div>
                     )}
-                    {book.landingUrl && (
-                      <a href={book.landingUrl} target="_blank" rel="noopener noreferrer" title="Landing Privada" className="w-8 h-8 rounded-lg bg-indigo-900 text-white flex items-center justify-center hover:bg-[#1CB5B1] transition-all">
-                        <i className="fa-solid fa-globe text-[10px]"></i>
-                      </a>
-                    )}
-                    {book.driveFolderUrl && (
-                      <a href={book.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all">
-                        <i className="fa-brands fa-google-drive text-[10px]"></i>
-                      </a>
-                    )}
+                    <div className="h-4 w-[1px] bg-slate-100"></div>
+                    <div className="flex items-center gap-3">
+                      {book.amazonLink && (
+                        <a href={book.amazonLink} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center hover:bg-orange-500 hover:text-white transition-all">
+                          <i className="fa-brands fa-amazon text-[10px]"></i>
+                        </a>
+                      )}
+                      {book.landingUrl && (
+                        <a href={book.landingUrl} target="_blank" rel="noopener noreferrer" title="Landing Privada" className="w-8 h-8 rounded-lg bg-indigo-900 text-white flex items-center justify-center hover:bg-[#1CB5B1] transition-all">
+                          <i className="fa-solid fa-globe text-[10px]"></i>
+                        </a>
+                      )}
+                      {book.driveFolderUrl && (
+                        <a href={book.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center hover:bg-emerald-500 hover:text-white transition-all">
+                          <i className="fa-brands fa-google-drive text-[10px]"></i>
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
+                
+                <div className="flex flex-col gap-2">
+                  <button onClick={() => openEdit(book)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
+                    <i className="fa-solid fa-edit text-xs"></i>
+                  </button>
+                  <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('books', book.id); refreshData(); } }} className="w-10 h-10 text-slate-200 hover:text-red-500 transition-colors">
+                    <i className="fa-solid fa-trash-can text-xs"></i>
+                  </button>
+                </div>
               </div>
-              
-              <div className="flex flex-col gap-2">
-                <button onClick={() => openEdit(book)} className="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl hover:bg-indigo-600 hover:text-white transition-all shadow-sm">
-                  <i className="fa-solid fa-edit text-xs"></i>
-                </button>
-                <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('books', book.id); refreshData(); } }} className="w-10 h-10 text-slate-200 hover:text-red-500 transition-colors">
-                  <i className="fa-solid fa-trash-can text-xs"></i>
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="col-span-full py-20 text-center opacity-30">
-               <i className="fa-solid fa-filter-circle-xmark text-4xl mb-4 text-slate-300"></i>
-               <p className="text-xs font-black uppercase tracking-widest">No hay libros que coincidan con los filtros</p>
-            </div>
-          ))}
+            );
+          })
+        ) : (
+          <div className="col-span-full py-20 text-center opacity-30">
+             <i className="fa-solid fa-filter-circle-xmark text-4xl mb-4 text-slate-300"></i>
+             <p className="text-xs font-black uppercase tracking-widest">No hay libros que coincidan con los filtros</p>
+          </div>
+        )}
       </div>
 
       {/* MODAL DE EDICIÓN / LANZAMIENTO */}
@@ -387,7 +389,7 @@ const BooksManager: React.FC<Props> = ({ data, refreshData }) => {
                   <div className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-4">
                     <div className="aspect-[3/4] bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 overflow-hidden flex flex-col items-center justify-center relative group transition-all hover:border-indigo-400 max-w-[240px] mx-auto shadow-inner">
                       {newBook.coverUrl ? (
-                        <img src={newBook.coverUrl} className="w-full h-full object-cover" />
+                        <img src={newBook.coverUrl} className="w-full h-full object-cover" alt="Portada" />
                       ) : (
                         <i className="fa-solid fa-cloud-arrow-up text-4xl text-slate-200"></i>
                       )}

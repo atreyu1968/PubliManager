@@ -108,7 +108,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
         <div className="flex flex-col md:flex-row items-center gap-6">
           <div className="w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center relative overflow-hidden flex-shrink-0 group transition-all hover:border-amber-400">
             {formData.logoUrl ? (
-              <img src={formData.logoUrl} className="w-full h-full object-contain p-2" />
+              <img src={formData.logoUrl} className="w-full h-full object-contain p-2" alt="Logo" />
             ) : (
               <i className="fa-solid fa-upload text-slate-300"></i>
             )}
@@ -150,7 +150,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
                <button 
                  key={f}
                  onClick={() => setLogoFilter(f as any)}
-                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${logoFilter === f ? 'bg-amber-500 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${logoFilter === f ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'}`}
                >
                  {f}
                </button>
@@ -164,7 +164,7 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
                <button 
                  key={f}
                  onClick={() => setLandingFilter(f as any)}
-                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${landingFilter === f ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}
+                 className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase transition-all ${landingFilter === f ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-100 hover:bg-slate-50'}`}
                >
                  {f}
                </button>
@@ -174,31 +174,37 @@ const ImprintsManager: React.FC<Props> = ({ data, refreshData }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredImprints.map(imprint => {
-          const displayLogo = logos[imprint.id] || imprint.logoUrl;
-          return (
-            <div key={imprint.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 overflow-hidden">
-                  {displayLogo ? <img src={displayLogo} className="w-full h-full object-contain p-1" /> : <i className="fa-solid fa-tag text-slate-200"></i>}
-                </div>
-                <div>
-                  <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
-                  <div className="flex items-center gap-2 mt-1.5">
-                    <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">{imprint.language}</span>
-                    {imprint.landingUrl && (
-                      <a href={imprint.landingUrl} target="_blank" className="text-indigo-500 hover:text-indigo-700"><i className="fa-solid fa-globe text-[10px]"></i></a>
-                    )}
+        {filteredImprints.length > 0 ? (
+          filteredImprints.map(imprint => {
+            const displayLogo = logos[imprint.id] || imprint.logoUrl;
+            return (
+              <div key={imprint.id} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 shadow-sm flex justify-between items-center group hover:shadow-xl transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-slate-50 flex items-center justify-center border border-slate-100 overflow-hidden">
+                    {displayLogo ? <img src={displayLogo} className="w-full h-full object-contain p-1" alt={imprint.name} /> : <i className="fa-solid fa-tag text-slate-200"></i>}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 tracking-tight leading-none">{imprint.name}</h3>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-[8px] text-slate-400 font-black uppercase tracking-widest">{imprint.language}</span>
+                      {imprint.landingUrl && (
+                        <a href={imprint.landingUrl} target="_blank" rel="noopener noreferrer" title="Landing Privada" className="text-indigo-500 hover:text-indigo-700"><i className="fa-solid fa-globe text-[10px]"></i></a>
+                      )}
+                    </div>
                   </div>
                 </div>
+                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onClick={() => openEdit(imprint)} className="text-slate-300 hover:text-indigo-500 transition"><i className="fa-solid fa-pen-to-square"></i></button>
+                    <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('imprints', imprint.id); refreshData(); } }} className="text-slate-300 hover:text-red-500 transition"><i className="fa-solid fa-trash-can"></i></button>
+                </div>
               </div>
-              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => openEdit(imprint)} className="text-slate-300 hover:text-indigo-500 transition"><i className="fa-solid fa-pen-to-square"></i></button>
-                  <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('imprints', imprint.id); refreshData(); } }} className="text-slate-300 hover:text-red-500 transition"><i className="fa-solid fa-trash-can"></i></button>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="col-span-full py-10 text-center opacity-20">
+             <p className="text-[9px] font-black uppercase tracking-widest">No hay sellos que coincidan con el filtro</p>
+          </div>
+        )}
       </div>
     </div>
   );

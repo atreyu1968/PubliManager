@@ -105,9 +105,9 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
 
       <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-10 text-left">
         <div className="lg:col-span-3 flex flex-col items-center border-b lg:border-b-0 lg:border-r border-slate-50 pb-10 lg:pb-0 lg:pr-10">
-          <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center mb-6 relative group cursor-pointer transition-all hover:border-indigo-400">
+          <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center mb-6 relative group cursor-pointer transition-all hover:border-indigo-400 shadow-inner">
             {newAuthor.photoUrl ? (
-              <img src={newAuthor.photoUrl} className="w-full h-full object-cover" />
+              <img src={newAuthor.photoUrl} className="w-full h-full object-cover" alt="Perfil" />
             ) : (
               <i className="fa-solid fa-camera text-slate-200 text-4xl"></i>
             )}
@@ -115,7 +115,7 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
           </div>
         </div>
         
-        <div className="lg:col-span-9 space-y-6">
+        <div className="lg:col-span-9 space-y-6 text-left">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre o Seudónimo Maestro</label>
@@ -175,42 +175,49 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
          </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredAuthors.map(p => (
-          <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6 relative group hover:shadow-2xl transition-all">
-            <div className="flex items-center gap-5">
-              <div className="w-20 h-20 rounded-3xl bg-slate-50 overflow-hidden border border-slate-100 shadow-inner flex-shrink-0">
-                {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-2xl m-6"></i>}
-              </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2 text-left">{p.name}</h3>
-                <div className="flex gap-2">
-                  {p.landingUrl && (
-                    <a href={p.landingUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-900 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-[#1CB5B1] transition-all">
-                      <i className="fa-solid fa-globe mr-1"></i> Landing
-                    </a>
-                  )}
-                  <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest">
-                    ID: {p.id.slice(0, 5)}
-                  </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 text-left">
+        {filteredAuthors.length > 0 ? (
+          filteredAuthors.map(p => (
+            <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6 relative group hover:shadow-2xl transition-all h-full">
+              <div className="flex items-center gap-5">
+                <div className="w-20 h-20 rounded-3xl bg-slate-50 overflow-hidden border border-slate-100 shadow-inner flex-shrink-0">
+                  {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" alt={p.name} /> : <i className="fa-solid fa-user text-slate-200 text-2xl m-6"></i>}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2">{p.name}</h3>
+                  <div className="flex gap-2">
+                    {p.landingUrl && (
+                      <a href={p.landingUrl} target="_blank" rel="noopener noreferrer" title="Landing Privada" className="px-3 py-1 bg-indigo-900 text-white rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-[#1CB5B1] transition-all">
+                        <i className="fa-solid fa-globe mr-1"></i> Landing
+                      </a>
+                    )}
+                    <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest">
+                      ID: {p.id.slice(0, 5)}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <p className="text-[11px] text-slate-500 font-medium line-clamp-3 leading-relaxed italic border-l-2 border-slate-100 pl-4 text-left">
-              {p.bio || "Sin biografía definida."}
-            </p>
+              
+              <p className="text-[11px] text-slate-500 font-medium line-clamp-3 leading-relaxed italic border-l-2 border-slate-100 pl-4">
+                {p.bio || "Sin biografía definida."}
+              </p>
 
-            <div className="flex gap-2 pt-4 border-t border-slate-50">
-               <button onClick={() => openEdit(p)} className="flex-1 py-3 bg-slate-50 text-slate-900 text-[9px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm">
-                 <i className="fa-solid fa-edit mr-2"></i> Editar
-               </button>
-               <button onClick={() => {if(confirm('¿Borrar identidad editorial?')) { db.deleteItem('pseudonyms', p.id); refreshData(); }}} className="px-4 py-3 bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-slate-100 shadow-sm">
-                 <i className="fa-solid fa-trash-can"></i>
-               </button>
+              <div className="flex gap-2 pt-4 border-t border-slate-50 mt-auto">
+                 <button onClick={() => openEdit(p)} className="flex-1 py-3 bg-slate-50 text-slate-900 text-[9px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm">
+                   <i className="fa-solid fa-edit mr-2"></i> Editar
+                 </button>
+                 <button onClick={() => {if(confirm('¿Borrar identidad editorial?')) { db.deleteItem('pseudonyms', p.id); refreshData(); }}} className="px-4 py-3 bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-slate-100 shadow-sm">
+                   <i className="fa-solid fa-trash-can"></i>
+                 </button>
+              </div>
             </div>
+          ))
+        ) : (
+          <div className="col-span-full py-20 text-center opacity-30">
+             <i className="fa-solid fa-user-slash text-4xl mb-4 text-slate-200"></i>
+             <p className="text-xs font-black uppercase tracking-widest">No hay autores que coincidan con el filtro</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
