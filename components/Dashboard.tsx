@@ -4,6 +4,7 @@ import { AppData } from '../types';
 import { db } from '../db';
 import { imageStore } from '../imageStore';
 import { ASDLogo } from '../App';
+import { Link } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface Props {
@@ -41,26 +42,6 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
     }
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        await imageStore.save('SYSTEM_BRAND_LOGO', reader.result as string);
-        window.dispatchEvent(new Event('brand_updated'));
-        alert('Logo corporativo actualizado con éxito.');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleResetLogo = async () => {
-    if (confirm('¿Restablecer logo por defecto?')) {
-      await imageStore.delete('SYSTEM_BRAND_LOGO');
-      window.dispatchEvent(new Event('brand_updated'));
-    }
-  };
-
   const activeBooks = data.books.filter(b => b.status === 'Publicado').length;
   const totalRevenue = data.sales.reduce((acc, curr) => acc + curr.revenue, 0);
   const totalKenpc = data.sales.reduce((acc, curr) => acc + curr.kenpc, 0);
@@ -79,55 +60,38 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
         </div>
         
         <div className="flex flex-wrap gap-3">
+          <Link 
+            to="/settings"
+            className="flex items-center gap-2 bg-[#1CB5B1] text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 transition-all shadow-lg active:scale-95"
+          >
+            <i className="fa-solid fa-gears"></i> Personalizar Sistema
+          </Link>
           <button 
             onClick={() => db.exportData()}
             className="flex items-center gap-2 bg-white border border-slate-200 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-md active:scale-95"
           >
-            <i className="fa-solid fa-download"></i> Backup Completo
+            <i className="fa-solid fa-download"></i> Backup
           </button>
-          
-          <label className="flex items-center gap-2 bg-white border border-slate-200 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 transition-all shadow-md active:scale-95 cursor-pointer">
-            <i className="fa-solid fa-upload"></i> Restaurar
-            <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-          </label>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* MÓDULO DE IDENTIDAD CORPORATIVA */}
-        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-lg shadow-slate-100/50 flex flex-col">
-          <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-6 flex items-center gap-2">
-            <i className="fa-solid fa-fingerprint text-[#1CB5B1]"></i> Identidad ASD
-          </h2>
-          <div className="flex-1 flex flex-col items-center justify-center py-4">
-            <div className="w-32 h-32 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden mb-6 group relative">
-              <ASDLogo className="w-24 h-24 object-contain" />
-              <label className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer">
-                <i className="fa-solid fa-camera text-white text-xl mb-1"></i>
-                <span className="text-[8px] font-black text-white uppercase">Cambiar Logo</span>
-                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
-              </label>
-            </div>
-            <div className="text-center space-y-1">
-              <p className="text-sm font-black text-slate-900 uppercase">Logo Personalizado</p>
-              <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest">Aplica a Login y Sidebar</p>
-            </div>
+        <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-lg shadow-slate-100/50 flex flex-col items-center justify-center text-center">
+          <div className="w-24 h-24 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-center overflow-hidden mb-4 shadow-inner">
+            <ASDLogo className="w-16 h-16 object-contain" />
           </div>
-          <button 
-            onClick={handleResetLogo}
-            className="mt-6 w-full py-3 bg-slate-100 text-slate-600 rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-red-50 hover:text-red-600 transition-all"
-          >
-            Restablecer Original
-          </button>
+          <h2 className="text-sm font-black text-slate-900 uppercase">Identidad ASD</h2>
+          <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-1">Configuración de Marca</p>
+          <Link to="/settings" className="mt-4 text-[9px] font-black text-[#1CB5B1] hover:text-slate-900 uppercase tracking-widest transition-colors">
+            Gestionar Branding <i className="fa-solid fa-arrow-right ml-1"></i>
+          </Link>
         </div>
 
         {/* STATS RÁPIDOS */}
-        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <StatCard title="Obras Publicadas" value={activeBooks} subtitle="Total catálogo activo" icon="fa-book-atlas" color="indigo" />
-          <StatCard title="Ingresos Totales" value={`${totalRevenue.toFixed(2)}€`} subtitle="Acumulado bruto" icon="fa-sack-dollar" color="emerald" />
-          <StatCard title="Páginas KENP" value={totalKenpc.toLocaleString()} subtitle="Lecturas KDP Select" icon="fa-book-open-reader" color="amber" />
-          <StatCard title="Producto Estrella" value={bookRevenue?.title || 'N/A'} subtitle={`${bookRevenue?.rev.toFixed(2) || 0}€ generados`} icon="fa-crown" color="purple" />
-        </div>
+        <StatCard title="Obras Publicadas" value={activeBooks} subtitle="Total catálogo activo" icon="fa-book-atlas" color="indigo" />
+        <StatCard title="Ingresos Totales" value={`${totalRevenue.toFixed(2)}€`} subtitle="Acumulado bruto" icon="fa-sack-dollar" color="emerald" />
+        <StatCard title="Páginas KENP" value={totalKenpc.toLocaleString()} subtitle="Lecturas KDP Select" icon="fa-book-open-reader" color="amber" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -178,7 +142,7 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
           <div className="mt-8 pt-8 border-t border-slate-900">
              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
                <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mb-1">Estado del sistema</p>
-               <p className="text-[10px] text-white font-bold tracking-tight">Metadata: {storageUsed}kb / Media: IndexedDB</p>
+               <p className="text-[10px] text-white font-bold tracking-tight">Capacidad: {storageUsed}kb / LocalSafe Mode</p>
              </div>
           </div>
         </div>

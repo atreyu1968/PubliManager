@@ -52,7 +52,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     { path: '/imprints', icon: 'fa-tags', label: 'Sellos' },
     { path: '/pseudonyms', icon: 'fa-user-pen', label: 'Seudónimos' },
     { path: '/ai-assistant', icon: 'fa-robot', label: 'Asistente IA' },
-    { path: '/settings', icon: 'fa-gears', label: 'Personalización' },
+    { path: '/settings', icon: 'fa-sliders', label: 'Personalización', special: true },
   ];
 
   return (
@@ -66,7 +66,7 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
           </div>
         </div>
       </div>
-      <nav className="flex-1 mt-6 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 mt-6 overflow-y-auto no-scrollbar pb-10">
         {menuItems.map((item) => (
           <Link
             key={item.path}
@@ -74,11 +74,13 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
             className={`flex items-center gap-4 px-6 py-4 transition-all duration-200 ${
               location.pathname === item.path 
               ? 'bg-[#1CB5B1] text-white font-semibold shadow-inner' 
-              : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+              : item.special 
+                ? 'text-[#1CB5B1] font-black hover:bg-slate-800' 
+                : 'hover:bg-slate-800 text-slate-400 hover:text-white'
             }`}
           >
             <i className={`fa-solid ${item.icon} w-6 text-center`}></i>
-            {item.label}
+            <span className="text-[11px] uppercase tracking-wider">{item.label}</span>
           </Link>
         ))}
       </nav>

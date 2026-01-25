@@ -8,6 +8,7 @@ interface Props {
   refreshData: () => void;
 }
 
+// Lista oficial de idiomas ASD - Asegurada la inclusión de Portugués
 const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', 'Francés', 'Catalán'];
 
 const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
@@ -38,6 +39,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
       updatedData = { ...currentData };
     } else {
       const timestamp = Date.now();
+      // Generación automática para los 7 idiomas ASD oficiales
       const newSeriesList: Series[] = LANGUAGES.map((lang, idx) => ({
         id: `s-${lang.toLowerCase().replace(/[^a-z]/g, '')}-${timestamp}-${idx}`,
         name: `${formData.name} (${lang})`,
@@ -80,7 +82,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
             <i className="fa-solid fa-layer-group text-amber-500"></i>
             Arquitectura de Sagas
           </h1>
-          <p className="text-sm text-slate-400 font-bold mt-1 uppercase tracking-widest">
+          <p className="text-sm text-slate-600 font-bold mt-1 uppercase tracking-widest">
             {data.series.length} Series registradas • Cobertura Multi-idioma
           </p>
         </div>
@@ -98,10 +100,10 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
             placeholder="Buscar saga..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border border-slate-100 rounded-[2rem] py-5 pl-16 pr-6 text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-amber-500/10 transition-all outline-none"
+            className="w-full bg-white border border-slate-200 rounded-[2rem] py-5 pl-16 pr-6 text-sm font-bold text-slate-700 shadow-sm focus:ring-4 focus:ring-amber-500/10 transition-all outline-none"
           />
         </div>
-        <select value={langFilter} onChange={e => setLangFilter(e.target.value)} className="bg-white border border-slate-100 rounded-[2rem] px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-500 outline-none shadow-sm transition-all cursor-pointer">
+        <select value={langFilter} onChange={e => setLangFilter(e.target.value)} className="bg-white border border-slate-200 rounded-[2rem] px-8 py-5 text-xs font-black uppercase tracking-widest text-slate-600 outline-none shadow-sm transition-all cursor-pointer">
           <option value="Todos">Idiomas: Todos</option>
           {LANGUAGES.map(l => <option key={l} value={l}>{l}</option>)}
         </select>
@@ -118,15 +120,15 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                   <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none">{s.name}</h3>
                 </div>
               </div>
-              <p className="text-xs text-slate-400 font-medium line-clamp-3 leading-relaxed italic mb-6">
+              <p className="text-xs text-slate-500 font-medium line-clamp-3 leading-relaxed italic mb-6">
                 {s.description || "Sin descripción establecida."}
               </p>
             </div>
             <div className="flex gap-2 pt-6 border-t border-slate-50">
-              <button onClick={() => openEdit(s)} className="flex-1 py-3 bg-slate-50 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all border border-slate-100">
+              <button onClick={() => openEdit(s)} className="flex-1 py-3 bg-slate-50 text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm">
                 <i className="fa-solid fa-edit mr-2"></i> Editar
               </button>
-              <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('series', s.id); refreshData(); } }} className="w-12 h-12 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all">
+              <button onClick={() => { if(confirm('¿Eliminar?')) { db.deleteItem('series', s.id); refreshData(); } }} className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 transition-all">
                 <i className="fa-solid fa-trash-can"></i>
               </button>
             </div>
@@ -145,26 +147,26 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
               <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
                 {editingId ? 'Editor de Saga' : 'Saga Maestra'}
               </h2>
-              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Crea automáticamente las versiones para los 7 idiomas ASD</p>
+              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Crea automáticamente las versiones para los 7 idiomas ASD</p>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga (Base)</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga (Base)</label>
                 <input 
                   type="text" 
                   placeholder="Ej: Las Crónicas del Silencio" 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl p-5 font-bold text-lg text-slate-900 placeholder:text-slate-200 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 font-bold text-lg text-slate-900 placeholder:text-slate-300 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner" 
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 ml-2">Descripción</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Descripción</label>
                 <textarea 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-100 rounded-[2rem] p-6 h-40 text-sm leading-relaxed text-slate-900 placeholder:text-slate-200 outline-none transition-all shadow-inner" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 h-40 text-sm leading-relaxed text-slate-900 placeholder:text-slate-300 outline-none transition-all shadow-inner" 
                   placeholder="Detalles de la trama..."
                 />
               </div>
