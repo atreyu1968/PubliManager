@@ -18,7 +18,8 @@ const initialImprints: Imprint[] = [
 const defaultSettings: AppSettings = {
   viewMode: 'grid',
   defaultLanguage: 'Español',
-  customActions: ['Traducción en curso', 'Corrección ortotipográfica', 'Diseño de portada', 'Maquetación interior', 'Revisión de galeradas']
+  customActions: ['Traducción en curso', 'Corrección ortotipográfica', 'Diseño de portada', 'Maquetación interior', 'Revisión de galeradas'],
+  externalLinks: []
 };
 
 const initialData: AppData = {
@@ -59,8 +60,9 @@ export const db = {
       }
       if (!parsed.settings) {
         parsed.settings = defaultSettings;
-      } else if (!parsed.settings.defaultLanguage) {
-        parsed.settings.defaultLanguage = 'Español';
+      } else {
+        if (!parsed.settings.defaultLanguage) parsed.settings.defaultLanguage = 'Español';
+        if (!parsed.settings.externalLinks) parsed.settings.externalLinks = [];
       }
       return parsed;
     } catch (e) {

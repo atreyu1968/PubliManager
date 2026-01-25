@@ -12,10 +12,10 @@ import ImprintsManager from './components/ImprintsManager';
 import PseudonymsManager from './components/PseudonymsManager';
 import AgendaView from './components/AgendaView';
 import SalesTracker from './components/SalesTracker';
-import AIAssistant from './components/AIAssistant';
 import Login from './components/Login';
 import HistoryView from './components/HistoryView';
 import SettingsView from './components/SettingsView';
+import ToolsView from './components/ToolsView';
 
 export const ASDLogo = ({ className = "w-16", forceDefault = false }: { className?: string, forceDefault?: boolean }) => {
   const [customLogo, setCustomLogo] = useState<string | null>(null);
@@ -46,12 +46,12 @@ const Sidebar = ({ onLogout }: { onLogout: () => void }) => {
     { path: '/', icon: 'fa-chart-line', label: 'Panel' },
     { path: '/agenda', icon: 'fa-calendar-days', label: 'Agenda' },
     { path: '/books', icon: 'fa-book', label: 'Catálogo' },
+    { path: '/tools', icon: 'fa-toolbox', label: 'Herramientas' },
     { path: '/history', icon: 'fa-clock-rotate-left', label: 'Historial' },
     { path: '/series', icon: 'fa-layer-group', label: 'Sagas' },
     { path: '/sales', icon: 'fa-money-bill-trend-up', label: 'Ventas' },
     { path: '/imprints', icon: 'fa-tags', label: 'Sellos' },
     { path: '/pseudonyms', icon: 'fa-user-pen', label: 'Seudónimos' },
-    { path: '/ai-assistant', icon: 'fa-robot', label: 'Asistente IA' },
     { path: '/settings', icon: 'fa-sliders', label: 'Personalización', special: true },
   ];
 
@@ -136,12 +136,12 @@ const App: React.FC = () => {
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
               <Route path="/agenda" element={<AgendaView data={data} refreshData={refreshData} />} />
               <Route path="/books" element={<BooksManager data={data} refreshData={refreshData} />} />
+              <Route path="/tools" element={<ToolsView data={data} />} />
               <Route path="/history" element={<HistoryView data={data} />} />
               <Route path="/series" element={<SeriesManager data={data} refreshData={refreshData} />} />
               <Route path="/sales" element={<SalesTracker data={data} refreshData={refreshData} />} />
               <Route path="/imprints" element={<ImprintsManager data={data} refreshData={refreshData} />} />
               <Route path="/pseudonyms" element={<PseudonymsManager data={data} refreshData={refreshData} />} />
-              <Route path="/ai-assistant" element={<AIAssistant data={data} />} />
               <Route path="/settings" element={<SettingsView data={data} refreshData={refreshData} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

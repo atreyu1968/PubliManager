@@ -16,7 +16,8 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
     name: '',
     bio: '',
     photoUrl: '',
-    standardAcknowledgments: ''
+    standardAcknowledgments: '',
+    driveFolderUrl: ''
   });
 
   useEffect(() => {
@@ -71,68 +72,109 @@ const PseudonymsManager: React.FC<Props> = ({ data, refreshData }) => {
   };
 
   const resetForm = () => {
-    setNewAuthor({ name: '', bio: '', photoUrl: '', standardAcknowledgments: '' });
+    setNewAuthor({ name: '', bio: '', photoUrl: '', standardAcknowledgments: '', driveFolderUrl: '' });
     setEditingId(null);
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-fadeIn pb-20">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight">Gestión de Autores</h1>
-          <p className="text-sm text-slate-500 font-medium">{editingId ? 'Editando autor...' : 'Añade una nueva identidad editorial.'}</p>
+          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Gestión de Identidades</h1>
+          <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">{editingId ? 'Editando autor seleccionado' : 'Añade una nueva identidad editorial al ecosistema ASD'}</p>
         </div>
         {editingId && (
-          <button onClick={resetForm} className="text-xs font-bold text-red-500 uppercase tracking-widest">Cancelar Edición</button>
+          <button onClick={resetForm} className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors">Cancelar Edición</button>
         )}
       </div>
 
-      <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="flex flex-col items-center">
-          <div className="w-32 h-32 rounded-full bg-slate-100 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center mb-4 relative group cursor-pointer">
+      <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <div className="lg:col-span-3 flex flex-col items-center border-b lg:border-b-0 lg:border-r border-slate-50 pb-10 lg:pb-0 lg:pr-10">
+          <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 border-2 border-dashed border-slate-200 overflow-hidden flex items-center justify-center mb-6 relative group cursor-pointer transition-all hover:border-indigo-400">
             {newAuthor.photoUrl ? (
               <img src={newAuthor.photoUrl} className="w-full h-full object-cover" />
             ) : (
-              <i className="fa-solid fa-camera text-slate-300 text-2xl"></i>
+              <i className="fa-solid fa-camera text-slate-200 text-4xl"></i>
             )}
             <input type="file" accept="image/*" onChange={handleFileUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
           </div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Foto de Perfil</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Retrato Corporativo</span>
         </div>
-        <div className="md:col-span-2 space-y-4">
-          <input 
-            placeholder="Nombre o Seudónimo" 
-            value={newAuthor.name} 
-            onChange={e => setNewAuthor({...newAuthor, name: e.target.value})}
-            className="w-full bg-slate-50 border-none rounded-xl px-6 py-3 font-bold text-slate-800 focus:ring-2 focus:ring-amber-500"
-          />
-          <textarea 
-            placeholder="Biografía..." 
-            value={newAuthor.bio} 
-            onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
-            className="w-full bg-slate-50 border-none rounded-xl px-6 py-3 h-20 text-sm"
-          />
-          <button onClick={handleSave} className="bg-amber-500 text-white px-10 py-3 rounded-xl font-black shadow-lg uppercase text-xs tracking-widest transition-transform active:scale-95">
-            {editingId ? 'Actualizar Datos' : 'Añadir Autor'}
+        
+        <div className="lg:col-span-9 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre o Seudónimo Maestro</label>
+              <input 
+                placeholder="Ej: Elena R. S." 
+                value={newAuthor.name} 
+                onChange={e => setNewAuthor({...newAuthor, name: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 font-black text-slate-900 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-inner"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Carpeta Google Drive (Producción)</label>
+              <div className="relative">
+                 <i className="fa-brands fa-google-drive absolute left-5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                 <input 
+                  placeholder="https://drive.google.com/..." 
+                  value={newAuthor.driveFolderUrl} 
+                  onChange={e => setNewAuthor({...newAuthor, driveFolderUrl: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl pl-14 pr-6 py-4 font-bold text-slate-600 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-inner text-xs"
+                />
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Perfil Biográfico</label>
+            <textarea 
+              placeholder="Escribe aquí la biografía comercial que se usará en Amazon y otros canales..." 
+              value={newAuthor.bio} 
+              onChange={e => setNewAuthor({...newAuthor, bio: e.target.value})}
+              className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-6 py-4 h-32 text-xs font-bold text-slate-600 focus:ring-4 focus:ring-indigo-500/10 outline-none transition-all shadow-inner resize-none leading-relaxed"
+            />
+          </div>
+
+          <button onClick={handleSave} className="bg-slate-900 text-white px-12 py-5 rounded-2xl font-black shadow-2xl uppercase text-[10px] tracking-[0.3em] transition-all active:scale-95 hover:bg-indigo-600 w-full md:w-auto">
+            {editingId ? 'Actualizar Identidad' : 'Registrar Nueva Identidad'}
           </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {data.pseudonyms.map(p => (
-          <div key={p.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col gap-4 relative group hover:shadow-xl transition-all">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-slate-50 overflow-hidden border border-slate-100">
-                {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-xl m-4"></i>}
+          <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col gap-6 relative group hover:shadow-2xl transition-all">
+            <div className="flex items-center gap-5">
+              <div className="w-20 h-20 rounded-3xl bg-slate-50 overflow-hidden border border-slate-100 shadow-inner flex-shrink-0">
+                {photos[p.id] ? <img src={photos[p.id]} className="w-full h-full object-cover" /> : <i className="fa-solid fa-user text-slate-200 text-2xl m-6"></i>}
               </div>
-              <div className="flex-1">
-                <h3 className="font-black text-slate-800 tracking-tight">{p.name}</h3>
-                <p className="text-[10px] text-slate-400 line-clamp-1 italic">{p.bio}</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-lg font-black text-slate-900 tracking-tight truncate leading-none mb-2">{p.name}</h3>
+                <div className="flex gap-2">
+                  {p.driveFolderUrl && (
+                    <a href={p.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[8px] font-black uppercase tracking-widest hover:bg-indigo-600 hover:text-white transition-all">
+                      <i className="fa-brands fa-google-drive mr-1"></i> Drive
+                    </a>
+                  )}
+                  <span className="px-3 py-1 bg-slate-50 text-slate-400 rounded-lg text-[8px] font-black uppercase tracking-widest">
+                    ID: {p.id.slice(0, 5)}
+                  </span>
+                </div>
               </div>
             </div>
-            <div className="flex gap-2">
-               <button onClick={() => openEdit(p)} className="flex-1 py-2 bg-slate-900 text-white text-[10px] font-black rounded-lg uppercase tracking-widest">Editar</button>
-               <button onClick={() => {if(confirm('¿Borrar?')) { db.deleteItem('pseudonyms', p.id); refreshData(); }}} className="px-3 bg-red-50 text-red-500 rounded-lg"><i className="fa-solid fa-trash"></i></button>
+            
+            <p className="text-[11px] text-slate-500 font-medium line-clamp-3 leading-relaxed italic border-l-2 border-slate-100 pl-4">
+              {p.bio || "Sin biografía definida."}
+            </p>
+
+            <div className="flex gap-2 pt-4 border-t border-slate-50">
+               <button onClick={() => openEdit(p)} className="flex-1 py-3 bg-slate-50 text-slate-900 text-[9px] font-black rounded-xl uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all border border-slate-100 shadow-sm">
+                 <i className="fa-solid fa-edit mr-2"></i> Editar
+               </button>
+               <button onClick={() => {if(confirm('¿Borrar identidad editorial?')) { db.deleteItem('pseudonyms', p.id); refreshData(); }}} className="px-4 py-3 bg-slate-50 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all border border-slate-100 shadow-sm">
+                 <i className="fa-solid fa-trash-can"></i>
+               </button>
             </div>
           </div>
         ))}

@@ -8,14 +8,14 @@ interface Props {
   refreshData: () => void;
 }
 
-// Lista oficial de idiomas ASD - Asegurada la inclusión de Portugués
 const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', 'Francés', 'Catalán'];
 
 const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [langFilter, setLangFilter] = useState('Todos');
+  const [langFilter, setLangFilter] = useState(data.settings.defaultLanguage || 'Todos');
+  const [launchType, setLaunchType] = useState<'master' | 'single'>('master');
 
   const [formData, setFormData] = useState<Partial<Series>>({
     name: '',
@@ -39,10 +39,11 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
       updatedData = { ...currentData };
     } else {
       const timestamp = Date.now();
-      // Generación automática para los 7 idiomas ASD oficiales
-      const newSeriesList: Series[] = LANGUAGES.map((lang, idx) => ({
+      const targetLangs = launchType === 'master' ? LANGUAGES : [data.settings.defaultLanguage];
+      
+      const newSeriesList: Series[] = targetLangs.map((lang, idx) => ({
         id: `s-${lang.toLowerCase().replace(/[^a-z]/g, '')}-${timestamp}-${idx}`,
-        name: `${formData.name} (${lang})`,
+        name: launchType === 'master' ? `${formData.name} (${lang})` : formData.name,
         description: formData.description || '',
         language: lang
       }));
@@ -58,6 +59,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingId(null);
+    setLaunchType('master');
     setFormData({ name: '', description: '' });
   };
 
@@ -83,11 +85,11 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
             Arquitectura de Sagas
           </h1>
           <p className="text-sm text-slate-600 font-bold mt-1 uppercase tracking-widest">
-            {data.series.length} Series registradas • Cobertura Multi-idioma
+            {data.series.length} Series registradas • Filtro: <span className="text-amber-600">{langFilter}</span>
           </p>
         </div>
         <button onClick={() => setIsModalOpen(true)} className="w-full lg:w-auto bg-slate-900 text-white px-10 py-5 rounded-3xl hover:bg-amber-600 shadow-2xl transition-all active:scale-95 font-black text-xs tracking-[0.2em] uppercase">
-          <i className="fa-solid fa-plus-circle mr-2"></i> Nueva Saga Maestra
+          <i className="fa-solid fa-plus-circle mr-2"></i> Nueva Saga
         </button>
       </div>
 
@@ -145,20 +147,36 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                 <i className="fa-solid fa-layer-group"></i>
               </div>
               <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">
-                {editingId ? 'Editor de Saga' : 'Saga Maestra'}
+                {editingId ? 'Editor de Saga' : 'Nueva Saga'}
               </h2>
-              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Crea automáticamente las versiones para los 7 idiomas ASD</p>
             </div>
 
             <div className="space-y-6">
+              {!editingId && (
+                 <div className="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
+                  <button 
+                    onClick={() => setLaunchType('master')}
+                    className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${launchType === 'master' ? 'bg-white text-amber-600 shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Maestra (7 Idiomas)
+                  </button>
+                  <button 
+                    onClick={() => setLaunchType('single')}
+                    className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${launchType === 'single' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400'}`}
+                  >
+                    Individual ({data.settings.defaultLanguage})
+                  </button>
+                </div>
+              )}
+
               <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga (Base)</label>
+                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga</label>
                 <input 
                   type="text" 
-                  placeholder="Ej: Las Crónicas del Silencio" 
+                  placeholder="Ej: Crónicas de ASD" 
                   value={formData.name} 
                   onChange={e => setFormData({...formData, name: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 font-bold text-lg text-slate-900 placeholder:text-slate-300 focus:ring-4 focus:ring-amber-500/10 outline-none transition-all shadow-inner" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 font-bold text-lg text-slate-900 outline-none transition-all shadow-inner" 
                 />
               </div>
               <div>
@@ -166,7 +184,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                 <textarea 
                   value={formData.description} 
                   onChange={e => setFormData({...formData, description: e.target.value})} 
-                  className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 h-40 text-sm leading-relaxed text-slate-900 placeholder:text-slate-300 outline-none transition-all shadow-inner" 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-6 h-40 text-sm leading-relaxed text-slate-900 outline-none transition-all shadow-inner resize-none" 
                   placeholder="Detalles de la trama..."
                 />
               </div>
@@ -174,9 +192,9 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                 <button onClick={closeModal} className="flex-1 py-5 text-slate-400 font-black text-[11px] tracking-[0.4em] uppercase hover:text-slate-900 transition-colors">Cancelar</button>
                 <button 
                   onClick={handleSave} 
-                  className="flex-[2] py-5 bg-amber-500 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.4em] shadow-2xl shadow-amber-100 hover:bg-amber-600 transition-all active:scale-95"
+                  className={`flex-[2] py-5 text-white rounded-[2rem] font-black uppercase text-[11px] tracking-[0.4em] shadow-2xl transition-all active:scale-95 ${launchType === 'master' ? 'bg-amber-500 hover:bg-amber-600 shadow-amber-100' : 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-100'}`}
                 >
-                  {editingId ? 'Actualizar' : 'Generar Lanzamiento Multi-idioma'}
+                  {editingId ? 'Actualizar' : `Generar Saga ${launchType === 'master' ? 'Maestra' : 'Individual'}`}
                 </button>
               </div>
             </div>

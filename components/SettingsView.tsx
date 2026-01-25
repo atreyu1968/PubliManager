@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { AppData, AppSettings } from '../types';
+import { AppData, AppSettings, ExternalLink } from '../types';
 import { db } from '../db';
 import { imageStore } from '../imageStore';
 import { ASDLogo } from '../App';
@@ -14,6 +14,7 @@ const LANGUAGES = ['Español', 'Inglés', 'Italiano', 'Portugués', 'Alemán', '
 
 const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
   const [newAction, setNewAction] = useState('');
+  const [newLink, setNewLink] = useState<Partial<ExternalLink>>({ name: '', url: '', icon: 'fa-link' });
 
   const handleUpdateSettings = (newSettings: Partial<AppSettings>) => {
     const updatedData = {
@@ -22,6 +23,27 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
     };
     db.saveData(updatedData);
     refreshData();
+  };
+
+  const addExternalLink = () => {
+    if (newLink.name && newLink.url) {
+      const link: ExternalLink = {
+        id: `link-${Date.now()}`,
+        name: newLink.name,
+        url: newLink.url,
+        icon: newLink.icon || 'fa-link'
+      };
+      handleUpdateSettings({
+        externalLinks: [...data.settings.externalLinks, link]
+      });
+      setNewLink({ name: '', url: '', icon: 'fa-link' });
+    }
+  };
+
+  const removeExternalLink = (id: string) => {
+    handleUpdateSettings({
+      externalLinks: data.settings.externalLinks.filter(l => l.id !== id)
+    });
   };
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -159,6 +181,77 @@ const SettingsView: React.FC<Props> = ({ data, refreshData }) => {
                 <i className={`fa-solid fa-list-ul text-2xl ${data.settings.viewMode === 'list' ? 'text-indigo-600' : 'text-slate-300'}`}></i>
                 <span className={`text-[10px] font-black uppercase tracking-widest ${data.settings.viewMode === 'list' ? 'text-indigo-600' : 'text-slate-400'}`}>Modo Lista</span>
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* HERRAMIENTAS EXTERNAS */}
+        <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-8">
+          <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest flex items-center gap-2">
+            <i className="fa-solid fa-toolbox text-indigo-500"></i> Herramientas Externas (Enlaces)
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            <div className="space-y-4">
+              <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">
+                Configura accesos directos a plataformas externas como Canva, Amazon KDP, o generadores de IA.
+              </p>
+              <div className="space-y-3">
+                <input 
+                  type="text" 
+                  placeholder="Nombre de la herramienta" 
+                  value={newLink.name}
+                  onChange={(e) => setNewLink({...newLink, name: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                />
+                <input 
+                  type="text" 
+                  placeholder="URL (https://...)" 
+                  value={newLink.url}
+                  onChange={(e) => setNewLink({...newLink, url: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none focus:ring-2 focus:ring-indigo-500/10"
+                />
+                <select 
+                  value={newLink.icon}
+                  onChange={(e) => setNewLink({...newLink, icon: e.target.value})}
+                  className="w-full bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-xs font-bold outline-none"
+                >
+                  <option value="fa-link">Icono: Link</option>
+                  <option value="fa-brands fa-amazon">Icono: Amazon</option>
+                  <option value="fa-palette">Icono: Diseño</option>
+                  <option value="fa-robot">Icono: IA</option>
+                  <option value="fa-chart-pie">Icono: Analytics</option>
+                  <option value="fa-google-drive">Icono: Drive</option>
+                </select>
+                <button 
+                  onClick={addExternalLink}
+                  className="w-full bg-slate-900 text-white px-6 py-4 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-indigo-600 transition-colors"
+                >
+                  Registrar Herramienta
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start content-start">
+               {data.settings.externalLinks.map(link => (
+                 <div key={link.id} className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex items-center justify-between group">
+                   <div className="flex items-center gap-3 overflow-hidden">
+                      <i className={`fa-solid ${link.icon} text-indigo-500`}></i>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black text-slate-800 uppercase truncate">{link.name}</p>
+                      </div>
+                   </div>
+                   <button 
+                    onClick={() => removeExternalLink(link.id)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                   >
+                     <i className="fa-solid fa-trash-can text-[10px]"></i>
+                   </button>
+                 </div>
+               ))}
+               {data.settings.externalLinks.length === 0 && (
+                 <p className="text-[10px] font-black text-slate-300 uppercase italic col-span-2 text-center py-10">No hay herramientas configuradas</p>
+               )}
             </div>
           </div>
         </div>

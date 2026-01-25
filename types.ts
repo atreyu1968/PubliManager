@@ -3,6 +3,13 @@ export type Platform = 'KDP' | 'D2D' | 'Ambos';
 export type BookFormat = 'Ebook' | 'Papel' | 'Dura' | 'Audio';
 export type BookStatus = 'Sin escribir' | 'Sin editar' | 'Preparado' | 'Publicado';
 
+export interface ExternalLink {
+  id: string;
+  name: string;
+  url: string;
+  icon?: string;
+}
+
 export interface Imprint {
   id: string;
   name: string;
@@ -16,6 +23,7 @@ export interface Pseudonym {
   bio: string;
   photoUrl?: string;
   standardAcknowledgments?: string;
+  driveFolderUrl?: string;
 }
 
 export interface Series {
@@ -85,6 +93,7 @@ export interface AppSettings {
   viewMode: 'grid' | 'list';
   customActions: string[];
   defaultLanguage: string;
+  externalLinks: ExternalLink[];
 }
 
 export interface AppData {
