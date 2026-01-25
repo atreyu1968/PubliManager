@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { AppData } from '../types';
 import { generateEditorialHelp } from '../geminiService';
@@ -42,13 +43,26 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
   };
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-black text-slate-800 flex items-center gap-3 tracking-tighter uppercase">
-          <i className="fa-solid fa-microchip text-indigo-600"></i> ASD Deep Intelligence
-        </h1>
-        <div className="bg-emerald-50 text-emerald-600 text-[10px] font-black px-3 py-1 rounded-full border border-emerald-100 uppercase tracking-widest">
-          Secure Core Active
+    <div className="space-y-8 animate-fadeIn pb-20">
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+            <i className="fa-solid fa-microchip text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">ASD Deep Intelligence</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">
+              Motor de razonamiento profundo para metadatos y SEO
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Core Seguro Activo</span>
+          </div>
         </div>
       </div>
 
@@ -145,11 +159,7 @@ const AIAssistant: React.FC<Props> = ({ data }) => {
                 </div>
               ) : (
                 <div className="h-full flex flex-col items-center justify-center opacity-20">
-                  <svg width="80" height="80" viewBox="0 0 280 120" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-8 filter grayscale">
-                    <path d="M20 100L55 20L90 100H70L65 85H45L40 100H20Z" fill="#2AD1CD" />
-                    <path d="M100 80C100 95 115 105 135 105C155 105 165 95 165 80C165 70 155 65 135 60C115 55 105 50 105 40C105 30 115 20 135 20C155 20 165 30 165 40H145V40C145 35 140 32 135 32C130 32 125 35 125 40C125 45 130 48 140 52C155 58 175 65 175 82C175 100 155 115 135 115C115 115 95 105 95 82H100Z" fill="#1CB5B1" />
-                    <path d="M185 20H220C255 20 275 40 275 67C275 94 255 115 220 115H185V20Z" fill="#F99F2A" />
-                  </svg>
+                  <i className="fa-solid fa-terminal text-6xl text-zinc-800 mb-6"></i>
                   <p className="text-sm tracking-[0.2em] text-center uppercase font-black text-zinc-700">Esperando parámetros de entrada...</p>
                 </div>
               )}

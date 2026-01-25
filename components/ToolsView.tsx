@@ -9,20 +9,26 @@ interface Props {
 const ToolsView: React.FC<Props> = ({ data }) => {
   return (
     <div className="space-y-8 animate-fadeIn pb-20">
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
-            <i className="fa-solid fa-toolbox text-indigo-600"></i>
-            Ecosistema de Herramientas
-          </h1>
-          <p className="text-[10px] text-slate-400 font-bold mt-1 uppercase tracking-widest">
-            Accesos directos a plataformas de producción editorial
-          </p>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+            <i className="fa-solid fa-toolbox text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Herramientas Externas</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">
+              Acceso unificado a plataformas de producción editorial
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
-           <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
-             {data.settings.externalLinks.length} Herramientas configuradas
-           </span>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex items-center gap-2 bg-slate-50 px-4 py-2 rounded-xl border border-slate-100">
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">
+               {data.settings.externalLinks.length} Accesos directos
+             </span>
+          </div>
         </div>
       </div>
 

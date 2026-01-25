@@ -21,6 +21,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
     
     const results = lines.map(line => {
       const parts = line.split(delimiter).map(p => p.trim());
+      // Esperamos: [Título] [Mes] [Año] [Unidades] [KENP] [Regalías] [Moneda] [ASIN]
       return {
         title: parts[0] || 'Sin título',
         month: parseInt(parts[1]) || new Date().getMonth() + 1,
@@ -28,6 +29,8 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
         units: parseInt(parts[3]) || 0,
         kenpc: parseInt(parts[4]) || 0,
         revenue: parseFloat(parts[5]?.replace(',', '.')) || 0,
+        currency: parts[6] || 'EUR',
+        asin: parts[7] || '',
         platform: 'KDP' as const
       };
     });
@@ -42,13 +45,18 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
     let newBooksCount = 0;
 
     for (const item of previewData) {
-      let book = currentData.books.find(b => b.title.toLowerCase() === item.title.toLowerCase());
+      // 1. Buscar o Crear Libro (Priorizar por ASIN si existe)
+      let book = currentData.books.find(b => 
+        (item.asin && b.asin === item.asin) || 
+        (b.title.toLowerCase() === item.title.toLowerCase())
+      );
       
       if (!book) {
         const bookId = `b-imported-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
         const newBook: Book = {
           id: bookId,
           title: item.title,
+          asin: item.asin,
           pseudonymId: currentData.pseudonyms[0]?.id || 'p1',
           imprintId: currentData.imprints[0]?.id || '1',
           description: 'Importado automáticamente via Amazon Sync.',
@@ -64,21 +72,32 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
         book = newBook;
         newBooksCount++;
         currentData = db.logAction(bookId, item.title, 'Creación', 'Libro creado automáticamente durante importación.', currentData);
+      } else if (item.asin && !book.asin) {
+        // Actualizar ASIN si el libro ya existía pero no lo tenía
+        book.asin = item.asin;
       }
 
+      // 2. Verificar duplicado de venta
       const duplicate = currentData.sales.find(s => 
         s.bookId === book?.id && 
         s.month === item.month && 
         s.year === item.year && 
-        s.platform === item.platform
+        s.platform === item.platform &&
+        s.currency === item.currency
       );
 
       if (!duplicate) {
         const saleId = `sale-imp-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
         currentData.sales.push({
-          ...item,
           id: saleId,
-          bookId: book.id
+          bookId: book.id,
+          month: item.month,
+          year: item.year,
+          units: item.units,
+          kenpc: item.kenpc,
+          revenue: item.revenue,
+          currency: item.currency,
+          platform: item.platform
         });
         importedCount++;
       }
@@ -87,7 +106,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
     db.saveData(currentData);
     refreshData();
     setIsProcessing(false);
-    alert(`Importación finalizada.\n- Registros nuevos: ${importedCount}\n- Libros creados: ${newBooksCount}`);
+    alert(`Importación finalizada.\n- Registros de venta nuevos: ${importedCount}\n- Libros creados: ${newBooksCount}`);
     setPreviewData([]);
     setRawText('');
   };
@@ -102,13 +121,13 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Ingesta de Datos</h1>
-            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Sincronización masiva desde Google Sheets o Amazon KDP</p>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Sincronización masiva con ASIN y multidivisa</p>
           </div>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
           <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Motor de Sincronización ASD</span>
+             <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Motor v3.0 Activo</span>
           </div>
         </div>
       </div>
@@ -119,8 +138,8 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
             <i className="fa-solid fa-paste text-indigo-500"></i> Entrada de Datos
           </h2>
           <p className="text-[11px] text-slate-500 font-medium leading-relaxed italic">
-            Copia y pega las columnas de tu Google Sheet. El orden debe ser:<br/>
-            <span className="font-bold text-indigo-600">[Título] [Mes] [Año] [Unidades] [KENP] [Regalías]</span>
+            Copia y pega desde tu Excel o Amazon KDP. Orden de columnas:<br/>
+            <span className="font-bold text-indigo-600 text-[10px]">[Título] [Mes] [Año] [Uds] [KENP] [Regalías] [Moneda] [ASIN]</span>
           </p>
           <textarea 
             value={rawText}
@@ -130,7 +149,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
           />
           <button 
             onClick={processInput}
-            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-indigo-600 transition-all active:scale-95"
+            className="w-full bg-slate-900 text-white py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-all active:scale-95"
           >
             Previsualizar Importación
           </button>
@@ -146,7 +165,7 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
                <table className="w-full text-left">
                   <thead className="sticky top-0 bg-slate-50 border-b border-slate-100">
                     <tr className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                      <th className="px-4 py-3">Obra</th>
+                      <th className="px-4 py-3">ASIN / Obra</th>
                       <th className="px-4 py-3 text-center">Periodo</th>
                       <th className="px-4 py-3 text-right">Regalías</th>
                     </tr>
@@ -154,9 +173,14 @@ const ImportManager: React.FC<Props> = ({ data, refreshData }) => {
                   <tbody className="divide-y divide-slate-50">
                     {previewData.map((item, i) => (
                       <tr key={i} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-3 text-[10px] font-bold text-slate-700 truncate max-w-[150px]">{item.title}</td>
+                        <td className="px-4 py-3">
+                           <div className="text-[8px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{item.asin || 'Sin ASIN'}</div>
+                           <div className="text-[10px] font-bold text-slate-700 truncate max-w-[150px]">{item.title}</div>
+                        </td>
                         <td className="px-4 py-3 text-center text-[9px] font-black text-slate-400 uppercase">{item.month}/{item.year}</td>
-                        <td className="px-4 py-3 text-right text-[10px] font-black text-emerald-600">{item.revenue}€</td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-[10px] font-black text-emerald-600">{item.revenue} {item.currency}</span>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

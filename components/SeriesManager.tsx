@@ -77,20 +77,23 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
 
   return (
     <div className="space-y-6 text-slate-900 pb-20 animate-fadeIn">
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase flex items-center gap-3">
-            <i className="fa-solid fa-layer-group text-amber-500"></i>
-            Arquitectura de Sagas
-          </h1>
-          <p className="text-sm text-slate-600 font-bold mt-1 uppercase tracking-widest">
-            {data.series.length} Series registradas • Filtro: <span className="text-amber-600">{langFilter}</span>
-          </p>
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 shadow-inner">
+            <i className="fa-solid fa-layer-group text-2xl"></i>
+          </div>
+          <div>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Arquitectura de Sagas</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Organización de universos literarios ASD</p>
+          </div>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="w-full lg:w-auto bg-slate-900 text-white px-10 py-5 rounded-3xl hover:bg-amber-600 shadow-2xl transition-all active:scale-95 font-black text-xs tracking-[0.2em] uppercase">
-          <i className="fa-solid fa-plus-circle mr-2"></i> Nueva Saga
-        </button>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none bg-slate-900 text-white px-8 py-4 rounded-2xl hover:bg-amber-600 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.2em] uppercase">
+            <i className="fa-solid fa-plus-circle mr-2"></i> Nueva Saga
+          </button>
+        </div>
       </div>
 
       {/* FILTROS */}
@@ -117,12 +120,12 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
           <div key={s.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group flex flex-col justify-between h-full">
             <div>
               <div className="flex justify-between items-start mb-4">
-                <div className="flex flex-col">
+                <div className="flex flex-col text-left">
                   <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest mb-1">{s.language || 'Global'}</span>
                   <h3 className="text-xl font-black text-slate-900 tracking-tight leading-none">{s.name}</h3>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 font-medium line-clamp-3 leading-relaxed italic mb-6">
+              <p className="text-xs text-slate-500 font-medium line-clamp-3 leading-relaxed italic mb-6 text-left">
                 {s.description || "Sin descripción establecida."}
               </p>
             </div>
@@ -169,7 +172,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                 </div>
               )}
 
-              <div>
+              <div className="text-left">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Nombre de la Saga</label>
                 <input 
                   type="text" 
@@ -179,7 +182,7 @@ const SeriesManager: React.FC<Props> = ({ data, refreshData }) => {
                   className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 font-bold text-lg text-slate-900 outline-none transition-all shadow-inner" 
                 />
               </div>
-              <div>
+              <div className="text-left">
                 <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-3 ml-2">Descripción</label>
                 <textarea 
                   value={formData.description} 

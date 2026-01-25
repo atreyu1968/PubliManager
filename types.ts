@@ -86,6 +86,7 @@ export interface SaleRecord {
   units: number;
   kenpc: number;
   revenue: number;
+  currency: string;
   platform: 'KDP' | 'D2D';
 }
 

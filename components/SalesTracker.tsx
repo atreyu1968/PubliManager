@@ -18,6 +18,7 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
     units: 0,
     kenpc: 0,
     revenue: 0,
+    currency: 'EUR',
     platform: 'KDP'
   });
 
@@ -56,8 +57,8 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
         </div>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-3.5 rounded-2xl hover:bg-emerald-700 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.2em] uppercase">
-            <i className="fa-solid fa-file-import mr-2"></i> Nuevo Reporte
+          <button onClick={() => setIsModalOpen(true)} className="flex-1 md:flex-none bg-emerald-600 text-white px-6 py-4 rounded-2xl hover:bg-emerald-700 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.2em] uppercase">
+            <i className="fa-solid fa-plus-circle mr-2"></i> Nuevo Reporte
           </button>
         </div>
       </div>
@@ -72,7 +73,7 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
                 <XAxis dataKey="label" fontSize={10} stroke="#94a3b8" />
                 <YAxis fontSize={10} stroke="#94a3b8" />
                 <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', color: '#0f172a'}} />
-                <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} name="Euros (€)" />
+                <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} name="Regalías" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -94,45 +95,53 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
       </div>
 
       <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
-        <table className="w-full text-left">
-          <thead>
-            <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-              <th className="px-8 py-4">Período</th>
-              <th className="px-8 py-4">Libro</th>
-              <th className="px-8 py-4">Distribuidora</th>
-              <th className="px-8 py-4 text-right">Ventas</th>
-              <th className="px-8 py-4 text-right">KENP</th>
-              <th className="px-8 py-4 text-right">Ingresos</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {data.sales.sort((a,b) => (b.year*12+b.month) - (a.year*12+a.month)).map(record => (
-              <tr key={record.id} className="hover:bg-slate-50 transition">
-                <td className="px-8 py-5 text-xs font-bold text-slate-600 uppercase">{getMonthName(record.month)} {record.year}</td>
-                <td className="px-8 py-5 text-sm font-black text-slate-900">
-                  {data.books.find(b => b.id === record.bookId)?.title || 'Libro eliminado'}
-                </td>
-                <td className="px-8 py-5">
-                  <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${record.platform === 'KDP' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
-                    {record.platform}
-                  </span>
-                </td>
-                <td className="px-8 py-5 text-right font-mono text-xs text-slate-600">{record.units}</td>
-                <td className="px-8 py-5 text-right font-mono text-xs text-indigo-500 font-bold">{record.kenpc.toLocaleString()}</td>
-                <td className="px-8 py-5 text-right font-black text-emerald-600">{record.revenue.toFixed(2)}€</td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                <th className="px-8 py-4">Período</th>
+                <th className="px-8 py-4">Libro / ASIN</th>
+                <th className="px-8 py-4">Distribuidora</th>
+                <th className="px-8 py-4 text-right">Ventas</th>
+                <th className="px-8 py-4 text-right">KENP</th>
+                <th className="px-8 py-4 text-right">Ingresos</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {data.sales.sort((a,b) => (b.year*12+b.month) - (a.year*12+a.month)).map(record => {
+                const book = data.books.find(b => b.id === record.bookId);
+                return (
+                  <tr key={record.id} className="hover:bg-slate-50 transition">
+                    <td className="px-8 py-5 text-xs font-bold text-slate-600 uppercase">{getMonthName(record.month)} {record.year}</td>
+                    <td className="px-8 py-5">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-tighter mb-0.5">{book?.asin || '---'}</div>
+                      <div className="text-sm font-black text-slate-900">{book?.title || 'Libro eliminado'}</div>
+                    </td>
+                    <td className="px-8 py-5">
+                      <span className={`px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter ${record.platform === 'KDP' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}`}>
+                        {record.platform}
+                      </span>
+                    </td>
+                    <td className="px-8 py-5 text-right font-mono text-xs text-slate-600">{record.units}</td>
+                    <td className="px-8 py-5 text-right font-mono text-xs text-indigo-500 font-bold">{record.kenpc.toLocaleString()}</td>
+                    <td className="px-8 py-5 text-right font-black text-emerald-600">
+                      {record.revenue.toFixed(2)} <span className="text-[10px] text-emerald-400 ml-0.5">{record.currency}</span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[3rem] p-10 max-w-lg w-full shadow-2xl animate-scaleIn text-slate-900">
-            <h2 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3 tracking-tighter uppercase leading-none">
+            <h2 className="text-3xl font-black text-slate-900 mb-8 flex items-center gap-3 tracking-tighter uppercase leading-none text-left">
               <i className="fa-solid fa-chart-line text-emerald-500"></i> Nuevo Reporte
             </h2>
-            <div className="space-y-6">
+            <div className="space-y-6 text-left">
               <div>
                 <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Obra Seleccionada</label>
                 <select value={newSale.bookId} onChange={e => setNewSale({...newSale, bookId: e.target.value})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-bold text-slate-900 outline-none focus:ring-2 focus:ring-emerald-500">
@@ -161,17 +170,17 @@ const SalesTracker: React.FC<Props> = ({ data, refreshData }) => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Unidades</label>
-                  <input type="number" value={newSale.units} onChange={e => setNewSale({...newSale, units: parseInt(e.target.value) || 0})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-mono text-slate-900 outline-none" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Moneda</label>
+                  <input type="text" value={newSale.currency} onChange={e => setNewSale({...newSale, currency: e.target.value.toUpperCase()})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-black text-slate-900 outline-none" placeholder="EUR, USD, GBP..." />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Páginas KENP</label>
-                  <input type="number" value={newSale.kenpc} onChange={e => setNewSale({...newSale, kenpc: parseInt(e.target.value) || 0})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-mono text-slate-900 outline-none" />
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Unidades</label>
+                  <input type="number" value={newSale.units} onChange={e => setNewSale({...newSale, units: parseInt(e.target.value) || 0})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-mono text-slate-900 outline-none" />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Ingresos (€)</label>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Ingresos</label>
                   <input type="number" step="0.01" value={newSale.revenue} onChange={e => setNewSale({...newSale, revenue: parseFloat(e.target.value) || 0})} className="w-full bg-slate-50 border border-slate-100 rounded-xl p-4 text-sm font-mono font-bold text-emerald-600 outline-none" />
                 </div>
               </div>

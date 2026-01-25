@@ -120,20 +120,20 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
 
   return (
     <div className="space-y-6 animate-fadeIn text-slate-900 pb-20">
-      {/* HEADER COMPACTO */}
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100">
+      {/* HEADER ESTANDARIZADO */}
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-slate-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-            <i className="fa-solid fa-calendar-week text-xl"></i>
+          <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 shadow-inner">
+            <i className="fa-solid fa-calendar-days text-2xl"></i>
           </div>
           <div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tighter uppercase leading-none">Agenda Semanal</h1>
-            <p className="text-[9px] text-slate-400 font-bold mt-1 uppercase tracking-widest">Planificación estratégica a 7 días</p>
+            <h1 className="text-3xl font-black text-slate-900 tracking-tighter uppercase leading-none">Plan Editorial</h1>
+            <p className="text-[10px] text-slate-400 font-bold mt-2 uppercase tracking-widest">Gestión de hitos y producción a 7 días vista</p>
           </div>
         </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
-          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200">
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
             <button onClick={() => moveWeek(-7)} className="px-3 py-1.5 hover:bg-white rounded-lg text-slate-400 hover:text-indigo-600 transition-all text-xs">
               <i className="fa-solid fa-chevron-left"></i>
             </button>
@@ -144,33 +144,33 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
           </div>
           <button 
             onClick={() => setShowTaskModal(true)}
-            className="flex-1 xl:flex-none bg-slate-900 text-white px-6 py-3 rounded-xl hover:bg-indigo-600 shadow-lg transition-all active:scale-95 font-black text-[9px] tracking-[0.1em] uppercase"
+            className="flex-1 md:flex-none bg-slate-900 text-white px-6 py-4 rounded-2xl hover:bg-indigo-600 shadow-xl transition-all active:scale-95 font-black text-[10px] tracking-[0.1em] uppercase"
           >
             <i className="fa-solid fa-plus mr-2"></i> Nuevo Hito
           </button>
         </div>
       </div>
 
-      {/* FILTROS ULTRA-COMPACTOS */}
-      <div className="bg-white p-4 rounded-[1.5rem] border border-slate-100 shadow-sm flex flex-wrap gap-4">
-        <select value={authorFilter} onChange={(e) => setAuthorFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-[9px] font-black uppercase text-slate-500 outline-none">
+      {/* FILTROS AVANZADOS */}
+      <div className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-wrap gap-4">
+        <select value={authorFilter} onChange={(e) => setAuthorFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[9px] font-black uppercase text-slate-500 outline-none">
           <option value="Todos">Autores: Todos</option>
           {data.pseudonyms.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <select value={bookFilter} onChange={(e) => setBookFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 text-[9px] font-black uppercase text-slate-500 outline-none flex-1 min-w-[150px]">
+        <select value={bookFilter} onChange={(e) => setBookFilter(e.target.value)} className="bg-slate-50 border border-slate-100 rounded-xl px-4 py-3 text-[9px] font-black uppercase text-slate-500 outline-none flex-1 min-w-[150px]">
           <option value="Todos">Libros: Todos</option>
           {data.books.map(b => <option key={b.id} value={b.id}>{b.title}</option>)}
         </select>
-        <div className="flex bg-slate-50 p-1 rounded-lg border border-slate-100">
+        <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
           {['Todas', 'Pendientes', 'Completadas'].map((opt) => (
-            <button key={opt} onClick={() => setStatusFilter(opt as any)} className={`px-3 py-1 rounded-md text-[8px] font-black uppercase tracking-widest transition-all ${statusFilter === opt ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
+            <button key={opt} onClick={() => setStatusFilter(opt as any)} className={`px-4 py-2 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all ${statusFilter === opt ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}>
               {opt}
             </button>
           ))}
         </div>
       </div>
 
-      {/* TABLERO SEMANAL HORIZONTAL (VISTA PORTÁTIL) */}
+      {/* TABLERO SEMANAL */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 min-h-[500px]">
         {visibleDays.map((day) => {
           const dateStr = day.toISOString().split('T')[0];
@@ -182,7 +182,6 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
               key={dateStr} 
               className={`flex flex-col rounded-[2rem] border transition-all h-full ${isToday ? 'bg-indigo-50/40 border-indigo-200 shadow-lg ring-1 ring-indigo-100' : 'bg-white border-slate-100 shadow-sm'}`}
             >
-              {/* HEADER DIA */}
               <div className={`p-4 text-center border-b ${isToday ? 'border-indigo-100' : 'border-slate-50'}`}>
                 <p className={`text-[8px] font-black uppercase tracking-[0.2em] ${isToday ? 'text-indigo-600' : 'text-slate-400'}`}>
                   {day.toLocaleDateString('es-ES', { weekday: 'short' })}
@@ -195,7 +194,6 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
                 </p>
               </div>
 
-              {/* LISTA TAREAS DIA */}
               <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[400px] custom-scrollbar">
                 {dayTasks.length > 0 ? (
                   dayTasks.map(task => {
@@ -213,7 +211,7 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
                           >
                             {task.completed && <i className="fa-solid fa-check text-white text-[6px]"></i>}
                           </button>
-                          <div className="min-w-0">
+                          <div className="min-w-0 text-left">
                             <p className={`text-[10px] font-black leading-tight mb-1 line-clamp-2 ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>
                               {task.title}
                             </p>
@@ -243,41 +241,6 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
         })}
       </div>
 
-      {/* SECCIÓN TAREAS FUERA DE RANGO (VENCIDAS O FUTURAS) */}
-      {outOfRangeTasks.length > 0 && (
-        <div className="space-y-4 pt-4">
-          <h2 className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] flex items-center gap-4">
-            <span className="w-12 h-[1px] bg-slate-200"></span>
-            Histórico y Previsión Lejana
-            <span className="flex-1 h-[1px] bg-slate-200"></span>
-          </h2>
-          <div className="flex flex-wrap gap-3">
-            {outOfRangeTasks.slice(0, 12).map(task => {
-              const book = data.books.find(b => b.id === task.bookId);
-              const isOverdue = !task.completed && task.dueDate < todayStr;
-              
-              return (
-                <div 
-                  key={task.id} 
-                  onClick={() => openEdit(task)}
-                  className={`px-4 py-3 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer group hover:shadow-md max-w-[280px] ${task.completed ? 'bg-slate-50 border-slate-100 opacity-50' : isOverdue ? 'bg-red-50 border-red-100' : 'bg-white border-slate-100 shadow-sm'}`}
-                >
-                  <div className="flex flex-col items-center border-r border-slate-100 pr-3 mr-1">
-                    <span className={`text-[7px] font-black uppercase tracking-tighter ${isOverdue ? 'text-red-600' : 'text-slate-400'}`}>{task.dueDate.split('-')[2]}</span>
-                    <span className="text-[6px] font-bold text-slate-300 uppercase tracking-widest">{task.dueDate.split('-')[1]}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className={`text-[10px] font-black truncate ${task.completed ? 'line-through text-slate-400' : 'text-slate-800'}`}>{task.title}</p>
-                    <p className="text-[7px] font-bold text-indigo-400 uppercase truncate">{book?.title || 'General'}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL DE TAREA - MANTENIDO IGUAL PARA FUNCIONALIDAD */}
       {showTaskModal && (
         <div className="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center z-[100] p-4">
           <div className="bg-white rounded-[2.5rem] p-10 max-w-lg w-full shadow-2xl animate-scaleIn border border-white/10">
@@ -326,14 +289,8 @@ const AgendaView: React.FC<Props> = ({ data, refreshData }) => {
               </div>
 
               <div className="flex gap-4 pt-6">
-                {editingTaskId && (
-                  <button onClick={() => { if(confirm('¿Eliminar esta tarea?')) { db.deleteItem('tasks', editingTaskId); refreshData(); closeModal(); } }} className="p-4 text-red-400 hover:text-red-600 transition-colors">
-                    <i className="fa-solid fa-trash-can"></i>
-                  </button>
-                )}
                 <button onClick={closeModal} className="flex-1 py-4 text-slate-400 font-black text-[10px] tracking-[0.2em] uppercase hover:text-slate-900 transition-colors">Cancelar</button>
                 <button onClick={handleSaveTask} className="flex-[2] py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] tracking-[0.2em] shadow-xl transition-all active:scale-95 uppercase">
-                  {/* Fixed editingId reference to editingTaskId */}
                   {editingTaskId ? 'Actualizar Hito' : 'Crear Hito'}
                 </button>
               </div>
