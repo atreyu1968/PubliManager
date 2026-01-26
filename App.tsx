@@ -103,12 +103,19 @@ const App: React.FC = () => {
     return localStorage.getItem('pm_auth') === 'true';
   });
   const [data, setData] = useState<AppData>(db.getData());
+  const [dbSource, setDbSource] = useState<'server' | 'local'>('local');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const refreshData = useCallback(() => {
-    setData(db.getData());
+  const refreshData = useCallback(async () => {
+    const { data: newData, source } = await db.fetchData();
+    setData(newData);
+    setDbSource(source);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {
+    refreshData();
+
     const handleStorageUpdate = (e: any) => {
       if (e.detail) {
         setData(e.detail);
@@ -144,6 +151,12 @@ const App: React.FC = () => {
   }, [refreshData]);
 
   if (!isAuthenticated) return <Login onLogin={() => setIsAuthenticated(true)} />;
+  if (isLoading) return (
+    <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center gap-6">
+       <ASDLogo className="w-24 h-auto animate-pulse" />
+       <p className="text-[10px] font-black text-[#1CB5B1] uppercase tracking-[0.5em]">Conectando a SQLite Servidor...</p>
+    </div>
+  );
 
   return (
     <HashRouter>
@@ -151,6 +164,14 @@ const App: React.FC = () => {
         <Sidebar onLogout={() => { localStorage.removeItem('pm_auth'); setIsAuthenticated(false); }} />
         
         <div className="flex-1 flex flex-col ml-64 min-h-screen">
+          {/* BARRA DE ESTADO DE CONEXIÓN */}
+          <div className={`px-6 py-1 text-center border-b transition-colors ${dbSource === 'server' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+            <p className={`text-[8px] font-black uppercase tracking-widest ${dbSource === 'server' ? 'text-emerald-600' : 'text-amber-600'}`}>
+              <i className={`fa-solid ${dbSource === 'server' ? 'fa-database' : 'fa-triangle-exclamation'} mr-2`}></i>
+              {dbSource === 'server' ? 'Sincronizado con SQLite en Servidor' : 'Modo Local (Sin conexión al servidor)'}
+            </p>
+          </div>
+
           <main className="flex-1 p-8 pb-16 overflow-x-hidden">
             <Routes>
               <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
@@ -168,7 +189,6 @@ const App: React.FC = () => {
             </Routes>
           </main>
           
-          {/* FOOTER ULTRA COMPACTO FIJO */}
           <footer className="fixed bottom-0 right-0 left-64 bg-white/95 backdrop-blur-md border-t border-slate-100 py-1.5 px-6 flex items-center justify-between z-[60] shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
              <div className="flex items-center gap-2">
                 <ASDLogo className="w-5 h-auto grayscale opacity-40 hover:opacity-100 transition-opacity" forceDefault />

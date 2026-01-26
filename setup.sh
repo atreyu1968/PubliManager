@@ -1,3 +1,4 @@
+
 #!/bin/bash
 set -e
 
@@ -9,7 +10,7 @@ NC='\033[0m'
 export NODE_OPTIONS="--max-old-space-size=2048"
 
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${BLUE}   Auto-Instalador ASD Atreyu - Secure Edition      ${NC}"
+echo -e "${BLUE}   Auto-Instalador ASD Atreyu - SQLITE FullStack    ${NC}"
 echo -e "${BLUE}====================================================${NC}"
 
 if [ "$EUID" -ne 0 ]; then 
@@ -26,45 +27,37 @@ if ! command -v node &> /dev/null; then
     apt install -y nodejs
 fi
 
-echo -e "${BLUE}Configuración de Acceso Web${NC}"
-if [ ! -f /etc/nginx/.htpasswd ]; then
-    read -p "Establezca contraseña para usuario 'admin': " APP_PASSWORD
-    htpasswd -bc /etc/nginx/.htpasswd admin "$APP_PASSWORD"
-    chmod 644 /etc/nginx/.htpasswd
-fi
-
-# NOTA: La API_KEY se inyecta automáticamente por el entorno de despliegue.
-# No se solicita al usuario para cumplir con las políticas de seguridad.
-
 echo -e "${GREEN}[3/5] Instalando paquetes de NPM...${NC}"
 npm install
 
-echo -e "${GREEN}[4/5] Compilando aplicación...${NC}"
-rm -rf dist
+echo -e "${GREEN}[4/5] Compilando aplicación y preparando servidor...${NC}"
 npm run build
 
-echo -e "${GREEN}[5/5] Desplegando en Nginx...${NC}"
+echo -e "${GREEN}[5/5] Configurando Nginx como Proxy Inverso...${NC}"
 DEPLOY_DIR="/var/www/publimanager"
 mkdir -p "$DEPLOY_DIR"
 cp -r dist/* "$DEPLOY_DIR/"
 chown -R www-data:www-data "$DEPLOY_DIR"
-chmod -R 755 "$DEPLOY_DIR"
 
 NGINX_CONF="/etc/nginx/sites-available/asd.atreyu.net"
 cat > "$NGINX_CONF" <<EOF
 server {
     listen 80;
     server_name asd.atreyu.net;
-    root $DEPLOY_DIR;
-    index index.html;
 
-    location / {
-        auth_basic "Acceso Restringido - ASD Atreyu";
-        auth_basic_user_file /etc/nginx/.htpasswd;
-        try_files \$uri \$uri/ /index.html;
+    location /api {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_cache_bypass \$http_upgrade;
     }
 
-    error_page 404 /index.html;
+    location / {
+        root $DEPLOY_DIR;
+        try_files \$uri \$uri/ /index.html;
+    }
 }
 EOF
 
@@ -73,8 +66,13 @@ rm -f /etc/nginx/sites-enabled/default || true
 nginx -t
 systemctl restart nginx
 
+echo -e "${BLUE}Instalando PM2 para mantener el servidor vivo...${NC}"
+npm install -g pm2
+pm2 start server.js --name "asd-api"
+pm2 save
+
 echo -e "${BLUE}====================================================${NC}"
-echo -e "${GREEN}¡SISTEMA DESPLEGADO CON ÉXITO!${NC}"
+echo -e "${GREEN}¡SISTEMA DESPLEGADO CON SQLITE CENTRALIZADO!${NC}"
+echo -e "Ahora los datos se guardan en el servidor y son comunes."
 echo -e "Acceso: ${BLUE}http://asd.atreyu.net${NC}"
-echo -e "IA: Motor Gemini 3 Pro (Pre-configurado)${NC}"
 echo -e "${BLUE}====================================================${NC}"

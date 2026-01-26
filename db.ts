@@ -3,7 +3,7 @@ import { AppData, Imprint, HistoryRecord, AppSettings } from './types';
 import { imageStore } from './imageStore';
 
 const STORAGE_KEY = 'publimanager_asd_v3';
-const OLD_KEYS = ['publimanager_asd_v2', 'publimanager_asd_v1', 'publimanager_data'];
+const API_URL = '/api/data';
 
 const initialImprints: Imprint[] = [
   { id: '1', name: 'ASD Español', language: 'Español' },
@@ -24,9 +24,7 @@ const defaultSettings: AppSettings = {
 
 const initialData: AppData = {
   imprints: initialImprints,
-  pseudonyms: [
-    { id: 'p1', name: 'Elena R. S.', bio: 'Escritora de suspense.' }
-  ],
+  pseudonyms: [{ id: 'p1', name: 'Elena R. S.', bio: 'Escritora de suspense.' }],
   series: [],
   books: [],
   tasks: [],
@@ -36,48 +34,60 @@ const initialData: AppData = {
 };
 
 export const db = {
-  getData: (): AppData => {
+  // Ahora getData es asíncrono para intentar traer datos del servidor
+  fetchData: async (): Promise<{ data: AppData, source: 'server' | 'local' }> => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      
-      if (!stored) {
-        for (const oldKey of OLD_KEYS) {
-          const oldData = localStorage.getItem(oldKey);
-          if (oldData) {
-            localStorage.setItem(STORAGE_KEY, oldData);
-            return JSON.parse(oldData);
-          }
+      const response = await fetch(API_URL);
+      if (response.ok) {
+        const serverData = await response.json();
+        if (serverData) {
+          console.log("Sincronizado con SQLite en Servidor");
+          // Espejo en local por si falla la conexión después
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
+          return { data: serverData, source: 'server' };
         }
-        return initialData;
       }
-      
-      const parsed = JSON.parse(stored);
-      // Validaciones de integridad
-      if (!parsed.imprints || parsed.imprints.length === 0) parsed.imprints = initialImprints;
-      if (!parsed.history) parsed.history = [];
-      if (!parsed.settings) {
-        parsed.settings = defaultSettings;
-      } else {
-        if (!parsed.settings.defaultLanguage) parsed.settings.defaultLanguage = 'Español';
-        if (!parsed.settings.externalLinks) parsed.settings.externalLinks = [];
-        if (!parsed.settings.customActions) parsed.settings.customActions = defaultSettings.customActions;
-      }
-      return parsed;
     } catch (e) {
-      console.error("Error al leer de localStorage", e);
+      console.warn("Servidor no disponible, usando almacenamiento local.");
+    }
+    
+    // Fallback a localStorage
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return { data: initialData, source: 'local' };
+    
+    const parsed = JSON.parse(stored);
+    return { data: parsed, source: 'local' };
+  },
+
+  getData: (): AppData => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (!stored) return initialData;
+    try {
+      return JSON.parse(stored);
+    } catch(e) {
       return initialData;
     }
   },
   
-  saveData: (data: AppData) => {
+  saveData: async (data: AppData) => {
     try {
+      // 1. Guardar en local (inmediato)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      // Notificación global para que todos los componentes se enteren del cambio
       window.dispatchEvent(new CustomEvent('storage_updated', { detail: data }));
+
+      // 2. Intentar persistir en Servidor SQLite
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      
+      if (!response.ok) throw new Error("Error en servidor");
+      
       return true;
     } catch (e) {
-      console.error("Error crítico de persistencia:", e);
-      alert("Error de almacenamiento: Es posible que el espacio del navegador esté lleno.");
+      console.error("Error persistiendo en servidor:", e);
+      // Los datos siguen en localStorage, pero avisamos al usuario
       return false;
     }
   },
@@ -93,39 +103,35 @@ export const db = {
       details
     };
     data.history.unshift(newRecord);
-    if (data.history.length > 500) {
-      data.history = data.history.slice(0, 500);
-    }
-    // Si no pasamos existingData, guardamos inmediatamente. 
-    // Si pasamos existingData, asumimos que el llamador guardará después (evita race conditions).
+    if (data.history.length > 500) data.history = data.history.slice(0, 500);
+    
     if (!existingData) {
       db.saveData(data);
     }
     return data;
   },
 
-  addItem: <T extends { id: string },>(collection: keyof AppData, item: T) => {
+  addItem: async <T extends { id: string },>(collection: keyof AppData, item: T) => {
     const data = db.getData();
     (data[collection] as any[]).push(item);
-    return db.saveData(data);
+    return await db.saveData(data);
   },
 
-  updateItem: <T extends { id: string },>(collection: keyof AppData, item: T) => {
+  updateItem: async <T extends { id: string },>(collection: keyof AppData, item: T) => {
     const data = db.getData();
     const index = (data[collection] as any[]).findIndex(i => i.id === item.id);
     if (index !== -1) {
       (data[collection] as any)[index] = item;
-      return db.saveData(data);
+      return await db.saveData(data);
     }
     return false;
   },
 
-  deleteItem: (collection: keyof AppData, id: string) => {
+  deleteItem: async (collection: keyof AppData, id: string) => {
     const data = db.getData();
     (data[collection] as any) = (data[collection] as any[]).filter(i => i.id !== id);
-    // Limpieza de IndexedDB asociada
     imageStore.delete(id); 
-    return db.saveData(data);
+    return await db.saveData(data);
   },
 
   exportData: async () => {
@@ -136,7 +142,7 @@ export const db = {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PM_FULL_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `PM_SQLITE_Sync_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
   },
 
@@ -150,7 +156,7 @@ export const db = {
           let metadata = backup.metadata || backup;
           let media = backup.media || {};
           if (metadata.books && metadata.imprints) {
-             db.saveData(metadata);
+             await db.saveData(metadata);
              await imageStore.clear();
              for (const [id, dataUrl] of Object.entries(media)) {
                await imageStore.save(id, dataUrl as string);
