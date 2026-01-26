@@ -14,51 +14,77 @@ const PORT = process.env.PORT || 3001;
 const DB_PATH = path.join(__dirname, 'database.sqlite');
 
 app.use(cors());
-app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.json({ limit: '100mb' }));
 
-// Inicializar SQLite
+// Inicializar SQLite con reintentos
 const db = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) console.error('Error abriendo SQLite:', err.message);
-  else console.log('Conectado a SQLite en Servidor.');
+  if (err) {
+    console.error('CRITICAL: Error abriendo SQLite:', err.message);
+    process.exit(1);
+  } else {
+    console.log('--- ASD BACKEND ACTIVE ---');
+    console.log(`Database connected: ${DB_PATH}`);
+  }
 });
 
-// Crear tabla de datos si no existe
+// Inicialización de esquema
 db.serialize(() => {
   db.run(`CREATE TABLE IF NOT EXISTS application_data (
     id INTEGER PRIMARY KEY CHECK (id = 1),
     data TEXT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )`);
-});
-
-// Obtener datos
-app.get('/api/data', (req, res) => {
-  db.get("SELECT data FROM application_data WHERE id = 1", (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (!row) return res.json(null);
-    res.json(JSON.parse(row.data));
+  )`, (err) => {
+    if (err) console.error("Error creando tabla:", err);
   });
 });
 
-// Guardar datos
+// Rutas API
+app.get('/api/data', (req, res) => {
+  db.get("SELECT data FROM application_data WHERE id = 1", (err, row) => {
+    if (err) {
+      console.error("DB GET ERROR:", err);
+      return res.status(500).json({ error: "Error de lectura en base de datos" });
+    }
+    if (!row) {
+      console.log("No data found, returning null");
+      return res.json(null);
+    }
+    try {
+      res.json(JSON.parse(row.data));
+    } catch (e) {
+      res.status(500).json({ error: "Datos corruptos en base de datos" });
+    }
+  });
+});
+
 app.post('/api/data', (req, res) => {
+  if (!req.body || typeof req.body !== 'object') {
+    return res.status(400).json({ error: "Cuerpo de solicitud inválido" });
+  }
+
   const data = JSON.stringify(req.body);
-  db.run(`INSERT OR REPLACE INTO application_data (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)`, 
+  db.run(`INSERT INTO application_data (id, data, updated_at) VALUES (1, ?, CURRENT_TIMESTAMP)
+          ON CONFLICT(id) DO UPDATE SET data=excluded.data, updated_at=excluded.updated_at`, 
     [data], 
     function(err) {
-      if (err) return res.status(500).json({ error: err.message });
+      if (err) {
+        console.error("DB SAVE ERROR:", err);
+        return res.status(500).json({ error: "Error de escritura en servidor" });
+      }
+      console.log(`Data saved successfully at ${new Date().toISOString()}`);
       res.json({ success: true });
     }
   );
 });
 
-// Servir archivos estáticos del frontend
-app.use(express.static(path.join(__dirname, 'dist')));
+// Servir Frontend
+const DIST_PATH = path.join(__dirname, 'dist');
+app.use(express.static(DIST_PATH));
 
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(DIST_PATH, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor ASD activo en puerto ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor ASD escuchando en: http://localhost:${PORT}`);
 });

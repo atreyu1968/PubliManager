@@ -1,3 +1,4 @@
+
 import { GoogleGenAI } from "@google/genai";
 
 /**
@@ -11,8 +12,8 @@ export const generateEditorialHelp = async (
   extraContext?: string,
   isKU?: boolean
 ) => {
-  // Inicialización segura
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  // Fix: Correct initialization using the mandatory named parameter for apiKey
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
   let prompt = '';
   const kuContext = isKU ? "ESTRATEGIA KINDLE UNLIMITED: Prioriza el gancho inicial y la retención para maximizar páginas leídas (KENP)." : "";

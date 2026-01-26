@@ -34,29 +34,30 @@ const initialData: AppData = {
 };
 
 export const db = {
-  // Ahora getData es asíncrono para intentar traer datos del servidor
   fetchData: async (): Promise<{ data: AppData, source: 'server' | 'local' }> => {
     try {
       const response = await fetch(API_URL);
       if (response.ok) {
         const serverData = await response.json();
-        if (serverData) {
-          console.log("Sincronizado con SQLite en Servidor");
-          // Espejo en local por si falla la conexión después
+        if (serverData && typeof serverData === 'object' && serverData.books) {
+          console.log("SYNC SUCCESS: Datos obtenidos de SQLite Servidor");
           localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
           return { data: serverData, source: 'server' };
         }
       }
     } catch (e) {
-      console.warn("Servidor no disponible, usando almacenamiento local.");
+      console.warn("SYNC WARNING: Servidor no responde, usando caché local.");
     }
     
-    // Fallback a localStorage
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return { data: initialData, source: 'local' };
     
-    const parsed = JSON.parse(stored);
-    return { data: parsed, source: 'local' };
+    try {
+      const parsed = JSON.parse(stored);
+      return { data: parsed, source: 'local' };
+    } catch(e) {
+      return { data: initialData, source: 'local' };
+    }
   },
 
   getData: (): AppData => {
@@ -71,23 +72,21 @@ export const db = {
   
   saveData: async (data: AppData) => {
     try {
-      // 1. Guardar en local (inmediato)
+      // 1. Local mirror
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       window.dispatchEvent(new CustomEvent('storage_updated', { detail: data }));
 
-      // 2. Intentar persistir en Servidor SQLite
+      // 2. Server persistence
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
       
-      if (!response.ok) throw new Error("Error en servidor");
-      
+      if (!response.ok) throw new Error("Server rejected data");
       return true;
     } catch (e) {
-      console.error("Error persistiendo en servidor:", e);
-      // Los datos siguen en localStorage, pero avisamos al usuario
+      console.error("SAVE ERROR (Persistence failed):", e);
       return false;
     }
   },
@@ -134,42 +133,17 @@ export const db = {
     return await db.saveData(data);
   },
 
-  exportData: async () => {
-    const metadata = db.getData();
-    const media = await imageStore.getAll();
-    const fullBackup = { metadata, media, timestamp: new Date().toISOString(), version: '3.0' };
-    const blob = new Blob([JSON.stringify(fullBackup, null, 2)], { type: 'application/json' });
+  // Fix: Added missing exportData method to support the backup functionality in Dashboard.tsx
+  exportData: () => {
+    const data = db.getData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `PM_SQLITE_Sync_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `publimanager_backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
     link.click();
-  },
-
-  importData: (jsonFile: File): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const content = e.target?.result as string;
-          const backup = JSON.parse(content);
-          let metadata = backup.metadata || backup;
-          let media = backup.media || {};
-          if (metadata.books && metadata.imprints) {
-             await db.saveData(metadata);
-             await imageStore.clear();
-             for (const [id, dataUrl] of Object.entries(media)) {
-               await imageStore.save(id, dataUrl as string);
-             }
-             resolve(true);
-          } else {
-            resolve(false);
-          }
-        } catch (err) {
-          resolve(false);
-        }
-      };
-      reader.readAsText(jsonFile);
-    });
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 };
