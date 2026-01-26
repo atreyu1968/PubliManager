@@ -103,7 +103,7 @@ const App: React.FC = () => {
     return localStorage.getItem('pm_auth') === 'true';
   });
   const [data, setData] = useState<AppData>(db.getData());
-  const [dbSource, setDbSource] = useState<'server' | 'local'>('local');
+  const [dbSource, setDbSource] = useState<'server' | 'local' | 'empty_server'>('local');
   const [isLoading, setIsLoading] = useState(true);
 
   const refreshData = useCallback(async () => {
@@ -154,7 +154,7 @@ const App: React.FC = () => {
   if (isLoading) return (
     <div className="fixed inset-0 bg-slate-950 flex flex-col items-center justify-center gap-6">
        <ASDLogo className="w-24 h-auto animate-pulse" />
-       <p className="text-[10px] font-black text-[#1CB5B1] uppercase tracking-[0.5em]">Conectando a SQLite Servidor...</p>
+       <p className="text-[10px] font-black text-[#1CB5B1] uppercase tracking-[0.5em]">Verificando Estación ASD...</p>
     </div>
   );
 
@@ -165,16 +165,30 @@ const App: React.FC = () => {
         
         <div className="flex-1 flex flex-col ml-64 min-h-screen">
           {/* BARRA DE ESTADO DE CONEXIÓN */}
-          <div className={`px-6 py-1 text-center border-b transition-colors ${dbSource === 'server' ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
-            <p className={`text-[8px] font-black uppercase tracking-widest ${dbSource === 'server' ? 'text-emerald-600' : 'text-amber-600'}`}>
-              <i className={`fa-solid ${dbSource === 'server' ? 'fa-database' : 'fa-triangle-exclamation'} mr-2`}></i>
-              {dbSource === 'server' ? 'Sincronizado con SQLite en Servidor' : 'Modo Local (Sin conexión al servidor)'}
+          <div className={`px-6 py-1 text-center border-b transition-all duration-500 ${
+            dbSource === 'server' ? 'bg-emerald-500/10 border-emerald-500/20' : 
+            dbSource === 'empty_server' ? 'bg-blue-500/10 border-blue-500/20' : 
+            'bg-amber-500/10 border-amber-500/20'
+          }`}>
+            <p className={`text-[8px] font-black uppercase tracking-widest ${
+              dbSource === 'server' ? 'text-emerald-600' : 
+              dbSource === 'empty_server' ? 'text-blue-600' : 
+              'text-amber-600'
+            }`}>
+              <i className={`fa-solid ${
+                dbSource === 'server' ? 'fa-cloud-check' : 
+                dbSource === 'empty_server' ? 'fa-server' : 
+                'fa-triangle-exclamation'
+              } mr-2`}></i>
+              {dbSource === 'server' ? 'Sincronizado con SQLite en Servidor' : 
+               dbSource === 'empty_server' ? 'Servidor Conectado (Base de datos vacía)' : 
+               'Modo Local (Sin conexión al servidor)'}
             </p>
           </div>
 
           <main className="flex-1 p-8 pb-16 overflow-x-hidden">
             <Routes>
-              <Route path="/" element={<Dashboard data={data} refreshData={refreshData} />} />
+              <Route path="/" element={<Dashboard data={data} refreshData={refreshData} dbSource={dbSource} />} />
               <Route path="/agenda" element={<AgendaView data={data} refreshData={refreshData} />} />
               <Route path="/books" element={<BooksManager data={data} refreshData={refreshData} />} />
               <Route path="/import" element={<ImportManager data={data} refreshData={refreshData} />} />

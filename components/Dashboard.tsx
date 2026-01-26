@@ -10,10 +10,12 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 interface Props {
   data: AppData;
   refreshData: () => void;
+  dbSource: 'server' | 'local' | 'empty_server';
 }
 
-const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
+const Dashboard: React.FC<Props> = ({ data, refreshData, dbSource }) => {
   const [storageUsed, setStorageUsed] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   useEffect(() => {
     const calculateStorage = () => {
@@ -27,6 +29,19 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
     };
     calculateStorage();
   }, [data]);
+
+  const handleForceSync = async () => {
+    if (!confirm('Esto subirá todos tus datos locales al servidor y los compartirá con todos tus dispositivos. ¿Continuar?')) return;
+    setIsSyncing(true);
+    const success = await db.forcePushToServer();
+    if (success) {
+      alert('¡Sincronización completada! Tus datos ya están en el servidor SQLite.');
+      refreshData();
+    } else {
+      alert('Error en la sincronización. Verifica que el servidor esté activo.');
+    }
+    setIsSyncing(false);
+  };
 
   const activeBooks = data.books.filter(b => b.status === 'Publicado').length;
   const totalRevenue = data.sales.reduce((acc, curr) => acc + curr.revenue, 0);
@@ -71,6 +86,35 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
           </button>
         </div>
       </div>
+
+      {/* ALERTA DE SINCRONIZACIÓN (Solo si está en modo local/vacío) */}
+      {(dbSource === 'local' || dbSource === 'empty_server') && data.books.length > 0 && (
+        <div className={`p-8 rounded-[2.5rem] border-2 flex flex-col md:flex-row items-center justify-between gap-6 animate-pulse shadow-xl ${
+          dbSource === 'empty_server' ? 'bg-blue-600 border-blue-400 text-white' : 'bg-amber-500 border-amber-400 text-white'
+        }`}>
+          <div className="flex items-center gap-5 text-left">
+            <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl">
+              <i className={`fa-solid ${dbSource === 'empty_server' ? 'fa-cloud-arrow-up' : 'fa-triangle-exclamation'}`}></i>
+            </div>
+            <div>
+              <h2 className="text-lg font-black uppercase tracking-tighter">
+                {dbSource === 'empty_server' ? 'Servidor Listo para Datos' : 'Datos Locales Detectados'}
+              </h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mt-1">
+                Tus datos actuales solo viven en este navegador. Sincronízalos con el servidor SQLite para acceder desde cualquier lugar.
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={handleForceSync}
+            disabled={isSyncing}
+            className="w-full md:w-auto px-10 py-4 bg-white text-slate-900 rounded-2xl font-black uppercase text-[11px] tracking-[0.2em] shadow-2xl hover:bg-slate-100 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {isSyncing ? <i className="fa-solid fa-sync animate-spin mr-2"></i> : <i className="fa-solid fa-cloud-upload mr-2"></i>}
+            {isSyncing ? 'Sincronizando...' : 'Subir a la Nube ASD'}
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-lg shadow-slate-100/50 flex flex-col items-center justify-center text-center">
@@ -137,7 +181,7 @@ const Dashboard: React.FC<Props> = ({ data, refreshData }) => {
           <div className="mt-8 pt-8 border-t border-slate-900">
              <div className="bg-white/5 p-4 rounded-2xl border border-white/10">
                <p className="text-[8px] font-black text-indigo-300 uppercase tracking-widest mb-1">Estado del sistema</p>
-               <p className="text-[10px] text-white font-bold tracking-tight">Capacidad: {storageUsed}kb / LocalSafe Mode</p>
+               <p className="text-[10px] text-white font-bold tracking-tight">Capacidad: {storageUsed}kb / {dbSource === 'server' ? 'CloudSync Active' : 'LocalSafe Mode'}</p>
              </div>
           </div>
         </div>

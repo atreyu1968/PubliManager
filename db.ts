@@ -34,7 +34,7 @@ const initialData: AppData = {
 };
 
 export const db = {
-  fetchData: async (): Promise<{ data: AppData, source: 'server' | 'local' }> => {
+  fetchData: async (): Promise<{ data: AppData, source: 'server' | 'local' | 'empty_server' }> => {
     try {
       const response = await fetch(API_URL);
       if (response.ok) {
@@ -43,10 +43,13 @@ export const db = {
           console.log("SYNC SUCCESS: Datos obtenidos de SQLite Servidor");
           localStorage.setItem(STORAGE_KEY, JSON.stringify(serverData));
           return { data: serverData, source: 'server' };
+        } else {
+          // El servidor respondió pero no tiene datos (está virgen)
+          return { data: db.getData(), source: 'empty_server' };
         }
       }
     } catch (e) {
-      console.warn("SYNC WARNING: Servidor no responde, usando caché local.");
+      console.warn("SYNC WARNING: Servidor no responde o inaccesible.");
     }
     
     const stored = localStorage.getItem(STORAGE_KEY);
@@ -72,11 +75,9 @@ export const db = {
   
   saveData: async (data: AppData) => {
     try {
-      // 1. Local mirror
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       window.dispatchEvent(new CustomEvent('storage_updated', { detail: data }));
 
-      // 2. Server persistence
       const response = await fetch(API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,7 +87,23 @@ export const db = {
       if (!response.ok) throw new Error("Server rejected data");
       return true;
     } catch (e) {
-      console.error("SAVE ERROR (Persistence failed):", e);
+      console.error("SAVE ERROR:", e);
+      return false;
+    }
+  },
+
+  forcePushToServer: async (): Promise<boolean> => {
+    const localData = db.getData();
+    console.log("Iniciando migración forzada al servidor...");
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(localData)
+      });
+      return response.ok;
+    } catch (e) {
+      console.error("Fallo en la migración:", e);
       return false;
     }
   },
@@ -133,7 +150,6 @@ export const db = {
     return await db.saveData(data);
   },
 
-  // Fix: Added missing exportData method to support the backup functionality in Dashboard.tsx
   exportData: () => {
     const data = db.getData();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
